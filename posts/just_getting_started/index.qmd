@@ -1,0 +1,23 @@
+---
+title: "Just Gettin' Started"
+author: "Brian M. Dennis"
+date: "2025-09-08"
+categories:
+---
+
+**Under extreme construction!!**
+
+Welcome! Not much here yet. Congratulate yourself on finding this
+nascent corner of the web.
+
+Currently [I'm](https://bmdphd.info) in under construction mode
+but wanted to have a tiny bit in place. I might be handing out
+business cards with the site URL and didn't want it to be completly
+empty.
+
+The [About](/about.qmd) page has the enduring details. This site was
+created to collect up various Brian M. Dennis personal projects into a
+professional portfolio and for participation in the public tech
+sphere. _That’s a lot of letter Ps there 🫤_.
+
+More to come!

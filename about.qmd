@@ -1,0 +1,152 @@
+---
+title: "About Memexponent"
+about:
+  template: solana
+  links:
+    - text: bmdphd
+      href: https://bmdphd.info/
+    - text: crossjam
+      href: https://mpr.crossjam.net/
+---
+
+This site was created to collect multiple
+coding explorations independently developed by [Brian M. Dennis,
+PHD](https://bmdphd.info/), a.k.a. _bmdphd_. For many decades now, I
+have also appeared across The Internets as _crossjam_.
+
+
+## Themes
+
+Getting laid off in August 2025 (collateral damage of US federal
+research and development funding cuts) left me with a bit of free time
+for deep diving into some technical areas that had long been on my
+mind. Broadly construed these are in the area of AI Engineering,
+building applications using modern generative AI capabilities.
+
+This is a ridiculously broad space so here a few specific themes I’d
+like to emerge as work on these projects.
+
+**Agentic Coding**. AI seems promising as a tool for increasing
+  developer productivity. There’s not a large body of rigorous work
+  pointing pro or con. I’m skeptically optimistic based upon my
+  reading of the technology media landscape. The best way to gather
+  more evidence is to dive in and build things using tools like,
+  aider, Claude Code, Zed, etc. So that’s what I’m doing. Man in the
+  AIrena.
+  
+**Retrieval Augmented Generation (RAG)**. Supplementing LLM based
+  systems with information retrieval capabilities was a red hot engine
+  of the hype cycle a year or two ago. The hype’s cooled off a bit,
+  other than proclamations that "Rag is Dead", but pragmatic industry
+  knowledge seems to be maturing. Information retrieval is just the
+  fancy academic way to say "search" and that’s long been a latent
+  interest of mine, just from a pure systems perspective.
+  
+ **Systematic AI Evals**. Before getting dismissed, I spent some time
+  researching approaches to evaluating Generative AI systems. There’s
+  an ever expanding galaxy of academic benchmarks and leaderboards for
+  assessment. In addition, there are many different approaches to
+  drive these systems, collect inputs and outputs, and calculate
+  evaluation metrics. I’m a huge exponent of work from [Eugene
+  Yan](https://eugeneyan.com/tag/eval/), [Hamel
+  Husain](https://hamel.dev/blog/posts/evals-faq/), and others in this
+  area. Always on the lookout for similar creators.
+  
+**Improved Software Engineering**. Even though I’ve been at it for a
+while, I wouldn’t consider myself a "professional" developer. I’ve
+written lots of research code but haven’t set foot near a production
+system. This is an opportunity to grow my abilities in a number of
+software engineering practices, like testing for example.
+  
+## Projects
+
+[retrocast](https://github.com/crossjam/retrocast) is AI-assisted retrospective
+exploration of podcast episode archives. I have been subscribed to a
+decent number of podcasts for a solid decade now. Often times a new
+technology emerges as a theme across multiple podcasts. I then have
+questions like, "where else in my space of episodes did this concept
+appear?", and "how long ago was the first appearance?". I also have
+questions about persons, places, and things from a longitudinal
+perspective, such as "whatever happened to that company FooScape?".
+
+[feedscope](https://github.com/crossjam/feedscope) could be construed
+as the RSS feed version of retrocast. This project is more about
+pushing as fast and as far with agentic coding as possible. The basis
+is an extremely well documented API for the Feedbin aggregator
+service. How
+
+prompthound is a pluralistic approach to examining Cory Doctorow’s
+blogging for the discerning craphound. Cory is a renowned author,
+activist, and blogger. After leaving BoingBoing and starting
+[Pluralistic](https://pluralistic.net) all of his blog content is
+readily available in full via RSS feed. A bit of a fanboi expedition,
+here I’m creating innovative search toys on top of this text dense,
+link rich, longitudinal, violently "of the Web" content.
+
+## Technologies
+
+A smorgasbord of stuff that I either use routinely or have definitie
+plans for engaging with soon.
+
+**LLM Developer Toolkitss**. [llm](https://llm.datasette.io),
+[PydanticAI](https://ai.pydantic.dev),
+
+**LLM Aggregator APIs**. OpenRouter, TogetherAI, FireworksAI, et. al.
+
+**Local Model Platforms**. LMStudio, ollama, Llamafile, mlx
+
+**Model Context Protocol (MCP)**. [modelcontextprotocol.io](https://modelcontextprotocol.io)
+
+**Eval frameworks**. [Pydantic Evals](https://ai.pydantic.dev/evals/),
+[promptfoo](https://www.promptfoo.dev),
+[Inspect](https://inspect.aisi.org.uk), [MLflow
+Evaluation](https://mlflow.org/docs/3.1.0rc0/llms/llm-evaluate/)
+
+**MLOps Observability Frameworks**. [MLFlow](https://mlflow.org), [Pydantic Logfire](https://pydantic.dev/logfire)
+
+**Marimo Notebooks**. [marimo](https://marimo.io) feels like a well
+timed branching of Jupyter principles for the modern AI moment. 
+
+**Coiled**. [Coiled](https://coiled.io) is a nice platform for scaling
+Python computations on top of public clouds.
+
+**Hugging Face**. [Hugging Face](https://huggingface.co) is arguably
+the premier ecosystem for sharing LLM artifacts such as model
+checkpoints and datasets. They also provide model aggregation APIs,
+serverless inference, and low code ui deployment.
+
+**Terminal CLI AI Repls**. Investigating what’s out there but I have
+this odd itch about an extensible REPL, combined with Agentic
+frameworks and MCP as a fruitful playground for high velocity
+experimentation with LLMs.
+
+## Etymology
+
+[_memex_](https://en.wikipedia.org/wiki/Memex) 
+
+> A memex (a portmanteau of "memory" and "index") is a hypothetical
+> electromechanical device for interacting with microform documents
+> and described in Vannevar Bush's 1945 article "As We May Think".
+> Bush envisioned the memex as a device in which individuals would
+> compress and store all of their books, records, and communications,
+> "mechanized so that it may be consulted with exceeding speed and
+> flexibility". The individual was supposed to use the memex as an
+> automatic personal filing system, making the memex "an enlarged
+> intimate supplement to his memory".
+
+
+[_exponent_](https://en.wiktionary.org/wiki/exponent) (plural exponents)
+
+> 1. One who expounds, represents or advocates. 
+> 2. (mathematics) The number by which a value (called the base) is
+>    said to be raised to a power in exponentiation. Synonym: power
+
+
+_memexponent_
+
+1. A hypothetical value by which the power of a memex is
+   exponentiated.
+2. An advocate of [The Memex
+   Method](https://pluralistic.net/2021/05/09/the-memex-method/)
+3. A [portmanteauing](https://en.wiktionary.org/wiki/portmanteau#Verb)
+of a [portmanteau](https://en.wiktionary.org/wiki/portmanteau#Noun_2). 
