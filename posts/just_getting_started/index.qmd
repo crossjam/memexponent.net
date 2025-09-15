@@ -10,7 +10,7 @@ categories:
 Welcome! Not much here yet. Congratulate yourself on finding this
 nascent corner of the web.
 
-Currently [I'm](https://bmdphd.info) in under construction mode
+Currently [I'm][1] in under construction mode
 but wanted to have a tiny bit in place. I might be handing out
 business cards with the site URL and didn't want it to be completly
 empty.
@@ -21,3 +21,5 @@ professional portfolio and for participation in the public tech
 sphere. _That’s a lot of letter Ps there 🫤_.
 
 More to come!
+
+[1]: https://bmdphd.info
