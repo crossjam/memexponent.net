@@ -9,30 +9,48 @@ about:
       href: https://mpr.crossjam.net/
 ---
 
-This site was created to collect multiple
-coding explorations independently developed by [Brian M. Dennis,
+
+## Why
+Memexponent was created to provide a nexus for 
+system building explorations independently developed by [Brian M. Dennis,
 PHD](https://bmdphd.info/), a.k.a. _bmdphd_. For many decades now, I
 have also appeared across The Internets as _crossjam_.
-
-
-## Themes
 
 Getting laid off in August 2025 (collateral damage of US federal
 research and development funding cuts) left me with a bit of free time
 for deep diving into some technical areas that had long been on my
 mind. Broadly construed these are in the area of AI Engineering,
-building applications using modern generative AI capabilities.
+building applications using modern generative AI capabilities. 
 
-This is a ridiculously broad space so here a few specific themes I’d
-like to emerge as work on these projects.
+As well, I wanted to create a public project portfolio that I can
+freely share in prospective employment engagements. Something of my
+own unlocked from past jobs.
+
+## Themes
+
+What even is AI Engineering? Chip Huyen has a pretty good [definition
+and book](https://huyenchip.com/books/) (_buy it!_).
+
+> This book discusses AI engineering: the process of building
+> applications with readily available foundation models. It introduces
+> a practical framework for developing an AI application and
+> efficiently deploying it. 
+
+> It also covers how to navigate the AI landscape, including models,
+> datasets, evaluation benchmarks, and the seemingly infinite number of
+> use cases and application patterns. 
+
+
+AI Engineering a ridiculously broad space so here a few specific themes I’d
+like to emerge as I work on these projects. 
 
 **Agentic Coding**. AI seems promising as a tool for increasing
   developer productivity. There’s not a large body of rigorous work
   pointing pro or con. I’m skeptically optimistic based upon my
   reading of the technology media landscape. The best way to gather
   more evidence is to dive in and build things using tools like,
-  aider, Claude Code, Zed, etc. So that’s what I’m doing. Man in the
-  AIrena.
+  [aider][1], [Claude Code][3], [Zed][2], etc. So that’s what I’m
+  doing. Man in the AIrena.
   
 **Retrieval Augmented Generation (RAG)**. Supplementing LLM based
   systems with information retrieval capabilities was a red hot engine
@@ -51,6 +69,22 @@ like to emerge as work on these projects.
   Yan](https://eugeneyan.com/tag/eval/), [Hamel
   Husain](https://hamel.dev/blog/posts/evals-faq/), and others in this
   area. Always on the lookout for similar creators.
+  
+**Context Engineering**. This concept has only gained tractions over
+the last few months but it definitely resonates. Where I used to be
+dismissive of prompt engineering, I have now come around to taking
+seriously the technical challenges of getting an LLM good
+context. Phil Schmid has [a good
+overview](https://www.philschmid.de/context-engineering):
+
+> Context Engineering is the discipline of designing and building
+> dynamic systems that provides the right information and tools, in
+> the right format, at the right time, to give a LLM everything it
+> needs to accomplish a task. 
+
+I
+have a hunch that some principles and techniques from the compiler
+community can provide a lot of leverage in this space.
   
 **Improved Software Engineering**. Even though I’ve been at it for a
 while, I wouldn’t consider myself a "professional" developer. I’ve
@@ -91,9 +125,14 @@ plans for engaging with soon.
 **LLM Developer Toolkitss**. [llm](https://llm.datasette.io),
 [PydanticAI](https://ai.pydantic.dev),
 
-**LLM Aggregator APIs**. OpenRouter, TogetherAI, FireworksAI, et. al.
+**LLM Aggregator APIs**. [OpenRouter](https://openrouter.ai),
+[TogetherAI](https://together.ai),
+[FireworksAI](https://fireworks.ai), et. al.
 
-**Local Model Platforms**. LMStudio, ollama, Llamafile, mlx
+**Local Model Platforms**. [LMStudio](https://lmstudio.ai),
+[ollama](https://ollama.com),
+[llamafile](https://github.com/Mozilla-Ocho/llamafile),
+[mlx](https://github.com/ml-explore)
 
 **Model Context Protocol (MCP)**. [modelcontextprotocol.io](https://modelcontextprotocol.io)
 
@@ -150,3 +189,7 @@ _memexponent_
    Method](https://pluralistic.net/2021/05/09/the-memex-method/)
 3. A [portmanteauing](https://en.wiktionary.org/wiki/portmanteau#Verb)
 of a [portmanteau](https://en.wiktionary.org/wiki/portmanteau#Noun_2). 
+
+[1]: https://aider.chat
+[2]: https://zed.dev
+[3]: https://www.anthropic.com/claude-code
