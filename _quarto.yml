@@ -2,7 +2,8 @@ project:
   type: website
 
 website:
-  title: "memexponent | bmdphd’s AI engineering explorations"
+  title: "memexponent | Building systems, learning AI Engineering"
+  site-url: https://memexponent.net
   navbar:
     right:
       - about.qmd
