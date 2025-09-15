@@ -1,0 +1,35 @@
+---
+title: "Code Agents Certificate"
+author: "Brian M. Dennis"
+date: "2025-09-15"
+categories:
+---
+
+![DeepLearning.AI Certificate - Building Code Agents with Hugging Face
+ smolagents](dlai_certificate.png)
+
+[Completion](https://learn.deeplearning.ai/accomplishments/31a87f63-9159-41db-a498-f9ebb75756da?usp=sharing)
+of this short course on DeepLearning.AI isn't a particularly grand
+achievement, especially as there’s no assessment. However, the
+material was quite enjoyable for two reasons:
+
+1. It clarified for me the distinction between code generation and
+tool calling in agentic systems. 💡 To the extent that an LLM can
+leverage composition mechanisms, code generation is more flexible and
+powerful, at the cost of security challenges. Tool calling feels more
+like webhooks or GUI callbacks to me. Definitely useful and maybe even
+moreso given clear guardrails.
+
+2. Tickled to see that sandboxing LLM generated code revisits all of
+the good efforts from the Systems community over the years. From
+programming language work exploring limiting language runtime
+capabilities to the long journey of process isolation
+a.k.a. containerization. AI may automate away a bunch of coding, but
+still lots of design work for humans to do.
+
+_Full disclosure, this is a lightly edited version of content
+originally posted on my (gated) [LinkedIn feed][1]._
+
+P.S. Ignore the pseudonym
+
+[1]: https://www.linkedin.com/in/crossjam/recent-activity/all/

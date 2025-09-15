@@ -1,0 +1,39 @@
+---
+title: "Gradient Flow on Enterprise Search"
+author: "Brian M. Dennis"
+date: "2025-09-15"
+categories:
+
+
+---
+
+I’ve been enjoying Ben Lorica’s [podcast][2] and
+[newsletter](https://gradientflow.substack.com) content since he was
+back at O’Reilly Media. A recent Gradient Flow newsletter entry, [_"A
+pragmatic guide to enterprise search that works"_][1] was full of
+gold. Two statements that really struck me were:
+
+1. **"This reality forces a shift in focus from the AI model to the data
+   foundation."** GIGO applies as well to the data that you're siccing
+   LLMs on. Organizational data engineering and data quality
+   capabilities can provide large ROI.
+
+2. "Enterprise success is not measured by open-domain accuracy but by
+   reliability within a specific, messy, and private context. ... **The
+   only way to solve this is to stop looking at external leaderboards
+   and start building your own internal evaluation suite.**"
+
+Emphases mine.
+
+I heard Ben encapsulate the second point into a sweet sound bite,
+"Evals are IP". That also applies widely beyond enterprise search to
+other AI engineered applications. [Hamel Husain](https://hamel.dev)
+has been doing a great job of [leading the charge][3] on this topic.
+
+_Full disclosure, this is a lightly edited version of content
+originally posted on my (gated) [LinkedIn feed][4]._
+
+[1]: https://gradientflow.substack.com/p/a-pragmatic-guide-to-enterprise-search
+[2]: https://thedataexchange.media/
+[3]: https://hamel.dev/blog/posts/evals-faq/
+[4]: https://www.linkedin.com/in/crossjam/recent-activity/all/
