@@ -1,0 +1,119 @@
+---
+title: "Diving Into MCP"
+author: "Brian M. Dennis"
+date: "2025-09-17"
+categories: [mcp, ai]
+draft: false
+---
+
+With my time currently at my own discretion, I wanted to really get a
+grip on Anthropic’s [Model Context Protocol (MCP)][3], since it’s
+taken AI Engineering by storm. MCP was only [introduced][5] in
+November of 2024. It really started flying across my radar around
+March or so, and now seems omnipresent.
+
+## Key Takeaways
+
+The core kernel of the MCP Server model (tools, resources, and prompts
+accessible via a JSON-RPC API serving subprocess via stdin/stdout) is
+quite accessible, compelling, and applicable. Claude Desktop
+integration makes MCP servers, off the shelf and custom developed,
+immediately useful. Expansion to many other applications, including
+ChatGPT, just solidifies the utility. The value proposition is clear.
+
+Go beyond that tight core and the payoff is not quite as
+obvious. Patterns for MCP Clients don’t feel as numerous or
+polished. The promise of remote MCP servers, instigating a confusing
+passel of network transports combined with AuthN/Z issues, seems
+headed for an enterprisey morass. I understand the utility of an MCP
+Client supporting **samples** but it’s a hard feature to wrap one’s
+head around. **Roots** seems prone to foot gunning.
+
+To solidify my understanding, I’ll be doing some prototyping with
+basic MCP Server capabilities. [FastMCP][6] looks like a well-designed
+foundation for getting started. Plugging into Claude Desktop and
+ChatGPT should be fun, but I’ll also be on the lookout for terminal
+CLI frameworks to work with just because I’m a [REPL][7] and terminal
+sort of guy.  Also, [Python](https://www.python.org) +
+[FastMCP](https://gofastmcp.com) + [uv](https://docs.astral.sh/uv/) +
+([Docker](https://docker.com) | [podman](https://podman.io)) can
+support rapid development, packaging, and deployment with good
+isolation. Don’t even have to buy into the [Docker MCP Toolkit][17].
+
+_The previous section was also posted to my LinkedIn feed._
+
+## Deeper Dive
+
+Here’s the definition of MCP, straight from the horses mouth:
+
+> MCP (Model Context Protocol) is an open-source standard for
+> connecting AI applications to external systems. 
+
+> Using MCP, AI applications like Claude or ChatGPT can connect to
+> data sources (e.g. local files, databases), tools (e.g. search
+> engines, calculators) and workflows (e.g. specialized
+> prompts)—enabling them to access key information and perform tasks. 
+
+> Think of MCP like a USB-C port for AI applications. Just as USB-C
+> provides a standardized way to connect electronic devices, MCP
+> provides a standardized way to connect AI applications to external
+> systems. 
+
+MCP is inspired by Language Server Protocol (LSP), a JSON-RPC based
+standard that supports intelligent code services within integrated
+development environments (IDEs). At first MCP’s choice of JSON-RPC as
+a foundation for RPC confused me but the connection with LSP clarified
+things. This also helps explain the canonical approach of launching an
+MCP server as a local subprocess of the hosting AI app.
+
+
+The minimal useful core of MCP has three key concepts:
+
+1. [**tools**][14], descriptions of available callback invocations for LLM
+   tool usage
+2. [**resources**][16], named content to be added to LLM contexts
+3. [**prompts**][15], canned prompts for direct feeding of LLMs
+
+On the more advanced end of MCP deployment you have
+
+1. [**sampling**][10], let’s the MCP server proxy LLM interactions back
+   through the MCP client
+2. [**logging**][12], a mechanism for an MCP server to notify the client of updates.
+3. [**roots**][9], management of filesystem access by the client.
+4. [**elicitation**][11], enables the server to make interactive
+   requests of the actual user
+4. **"remote" processes and [alternative transports][13]**, instead of
+   running an MCP server as a direct subprocess client, the client
+   connects using network transports like [StreamableHTTP][8] 
+   
+Most of these extra features make surface sense, but upon further
+inspection tickle my complexity spidey sense. For example, sampling
+seems like a reasonable feature, but then the MCP spec doesn’t provide
+much guidance about [security considerations for sampling][17]. Here be dragons.
+
+Pics, cause it happened:
+
+![Model Context Protocol Introduction Certificate][1]
+
+![Model Context Protocol Advanced Certificate][2]
+
+![Deep Learning AI - Model Context Protocol][4]
+
+
+[1]: mcp-intro.png
+[2]: mcp-advanced.png
+[3]: https://modelcontextprotocol.io/
+[4]: dlai_mcp.png
+[5]: https://www.anthropic.com/news/model-context-protocol
+[6]: https://gofastmcp.com/getting-started/welcome
+[7]: https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop
+[8]: https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http
+[9]: https://modelcontextprotocol.io/specification/2025-06-18/client/roots
+[10]:https://modelcontextprotocol.io/specification/2025-06-18/client/sampling
+[11]: https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation
+[12]: https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging
+[13]: https://modelcontextprotocol.io/specification/2025-06-18/basic/transports
+[14]: https://modelcontextprotocol.io/specification/2025-06-18/server/tools
+[15]: https://modelcontextprotocol.io/specification/2025-06-18/server/prompts
+[16]: https://modelcontextprotocol.io/specification/2025-06-18/server/resources
+[17]: https://docs.docker.com/ai/mcp-catalog-and-toolkit/toolkit/

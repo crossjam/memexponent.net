@@ -2,9 +2,7 @@
 title: "Gradient Flow on Enterprise Search"
 author: "Brian M. Dennis"
 date: "2025-09-15"
-categories:
-
-
+categories: [ "ai", "search" ]
 ---
 
 I’ve been enjoying Ben Lorica’s [podcast][2] and
