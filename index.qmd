@@ -1,14 +1,21 @@
 ---
 title: "memexponent"
 listing:
-  contents: posts
-  sort: "date desc"
-  type: default
-  categories: true
-  sort-ui: false
-  filter-ui: false
-  feed: true
+  - id: published
+    contents: posts
+    sort: "date desc"
+    type: default
+    categories: true
+    sort-ui: false
+    filter-ui: false
+    feed: true
+    include:
+      draft: false
 page-layout: full
 title-block-banner: true
+previewing: true
 ---
 
+::: {.content-visible unless-profile="production"}
+[drafts](drafts.html)
+:::

@@ -6,9 +6,10 @@ freeze: true
 
 # Enable banner style title blocks
 title-block-banner: true
+draft: true
 
-draft-mode: visible
-# draft-mode: unlinked
+# draft-mode: visible
+# draft-mode: gone
 
 
 

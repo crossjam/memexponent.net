@@ -1,0 +1,10 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - "*.qmd"
+    - "posts/**/*.qmd"
+    - "!drafts.qmd"
+
+website:
+  draft-mode: gone

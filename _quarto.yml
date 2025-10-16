@@ -1,8 +1,9 @@
 project:
   type: website
+  output-dir: _site
 
 website:
-  title: "memexponent | Building systems, learning AI Engineering"
+  title: "memexponent | Building systems. Learning AI Engineering."
   site-url: https://memexponent.net
   navbar:
     right:
@@ -12,6 +13,8 @@ website:
       - icon: linkedin
         href: https://linkedin.com/in/crossjam
 
+  draft-mode: visible
+  
 format:
   html:
     theme:
