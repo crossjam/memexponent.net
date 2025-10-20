@@ -3,6 +3,7 @@ title: "Code Agents Certificate"
 author: "Brian M. Dennis"
 date: "2025-09-15"
 categories: [ "ai" ]
+draft: false
 ---
 
 ![DeepLearning.AI Certificate - Building Code Agents with Hugging Face

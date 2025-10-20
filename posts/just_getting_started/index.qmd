@@ -3,6 +3,7 @@ title: "Just Gettin' Started"
 author: "Brian M. Dennis"
 date: "2025-09-08"
 categories: intro
+draft: false
 ---
 
 **Under extreme construction!!**
