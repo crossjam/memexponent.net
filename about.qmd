@@ -1,5 +1,5 @@
 ---
-title: "About Memexponent"
+title: "About"
 about:
   template: solana
   links:
@@ -25,6 +25,10 @@ building applications using modern generative AI capabilities.
 As well, I wanted to create a public project portfolio that I can
 freely share in prospective employment engagements. Something of my
 own unlocked from past jobs.
+
+The [charter](charter.qmd) captures the technical goals in a tightly
+distilled fashion. Give that a read if you’re in a hurry. Meanwhile,
+I’ll take a few liberties and blather on a bit.
 
 ## Themes
 
@@ -82,8 +86,7 @@ overview](https://www.philschmid.de/context-engineering):
 > the right format, at the right time, to give a LLM everything it
 > needs to accomplish a task. 
 
-I
-have a hunch that some principles and techniques from the compiler
+I have a hunch that some principles and techniques from the compiler
 community can provide a lot of leverage in this space.
   
 **Improved Software Engineering**. Even though I’ve been at it for a

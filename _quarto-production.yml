@@ -4,7 +4,7 @@ project:
   render:
     - "*.qmd"
     - "posts/**/*.qmd"
-    - "!drafts.qmd"
+    - "!drafts"
 
 website:
   draft-mode: gone
