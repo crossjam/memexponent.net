@@ -3,7 +3,7 @@ project:
   output-dir: _site
 
 website:
-  title: "memexponent | Building systems. Learning AI Engineering."
+  title: "memexponent | Prototyping, Upskilling, & Engineering with AI"
   site-url: https://memexponent.net
   navbar:
     right:

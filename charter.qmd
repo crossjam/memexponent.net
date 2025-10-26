@@ -9,12 +9,11 @@ about:
       href: https://mpr.crossjam.net/
 ---
 
-The [_About Memexponent_](about.qmd) expansively covers many of the
+The [_About page_](about.qmd) expansively covers many of the
 drivers behind the work on this site. I’ve distilled a small number of
 key technical goals down to a conceptual framework entitled
 **PROVEN**. These are highly targeted at AI engineering. Here’s the
-concise, technically grounded bullet list expanding PROVEN into its
-six pillars:
+concise bullet list expanding PROVEN into its six pillars:
 
 - **P** | Post-training - Refining and adapting foundation models through
 	fine-tuning, alignment, or distillation to specialize behavior for

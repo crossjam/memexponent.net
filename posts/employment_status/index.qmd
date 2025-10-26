@@ -1,0 +1,55 @@
+---
+title: Employment Status
+date: 2025-10-20
+author: "Brian M. Dennis"
+draft: false
+categories:
+  - work
+  - personal
+---
+
+It’s been a little over two months since I was laid off. August 11,
+2025 is etched into the DNA of this site. The posts are a bit of
+catharsis to go along with a lot of self promotion. 
+
+In the US, two months out of work starts to feel like a long
+time. Fortunately, I’ve got a bit of financial runway and some strong
+family backup if needed. The first month was a jarring mental
+transition on top of a spate of administrative issues to
+address. Didn’t really have a plan for month two. Was settling in to
+put together a strategy.
+
+I had "pulsed the network". Just letting personal relations know I was
+on the market. Posting content, some repurposed from here, to
+LinkedIn. The network rolled into action.
+
+While I haven’t quite nailed down the next thing yet, one initial
+conversation led to rapidly advanced discussions and I received a real
+offer. Had to turn it down because the job location and start date
+timing just didn’t work out. Meanwhile, other discussions are
+generating what feel like good leads. My next step is to start
+throwing resumes into the Applicant Tracking System (ATS)
+threshers. And I’m pretty sure I’ve got a firm last resort, safe
+harbor if all else fails.
+
+A [World of DaaS podcast episode][1] helped crystalize things into a
+couple of key points. First, finding the next work is the current
+work, full time. Another was having concrete results that can provide
+evidence. This blog and related projects are the development of that
+evidence. Writing code and narrating the process. But the biggest one
+was offer to help instead of asking for help. Defining a pain point
+and offering a solution, developed on spec, can set you apart. And
+I’ve added one of my own. Be ready with an "initial value proposition"
+(IVP). Here’s your upside from Day One of us working together.
+
+There’s a lot of personal stuff that needs managing through
+November. My hope is to have the next thing secured by the end of that
+month at the latest. Maybe ease it into the gig through December, but
+definitely full on back at it after the new year.
+
+Who knows what the future will hold, but I’m feeling pretty confident
+at the moment. We shall see what we shall see.
+
+[1]: https://www.buzzsprout.com/1783651/episodes/17947183-the-lm-brief-how-to-actually-look-for-a-job-without-wasting-everyone-s-time
+
+

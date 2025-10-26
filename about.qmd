@@ -112,9 +112,10 @@ pushing as fast and as far with agentic coding as possible. The basis
 is an extremely well documented API for the Feedbin aggregator
 service. How
 
-prompthound is a pluralistic approach to examining Cory Doctorow’s
-blogging for the discerning craphound. Cory is a renowned author,
-activist, and blogger. After leaving BoingBoing and starting
+[prompthound](https://github.com/crossjam/prompthound) is a
+pluralistic approach to examining Cory Doctorow’s blogging for the
+discerning craphound. Cory is a renowned author, activist, and
+blogger. After leaving BoingBoing and starting
 [Pluralistic](https://pluralistic.net) all of his blog content is
 readily available in full via RSS feed. A bit of a fanboi expedition,
 here I’m creating innovative search toys on top of this text dense,

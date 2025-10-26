@@ -1,0 +1,73 @@
+---
+title: "Agentic CLI Frameworks"
+author: "Brian M. Dennis"
+date: 2025-10-21
+draft: false
+categories: ["ai", "cli"]
+---
+
+In prototyping AI applications I have a strong hunch that one can go
+quite far by starting off with a command line interface (CLI) as the
+initial front end. No need to fire up a web browser, and deal with
+JavaScript programming, to have conversations with agents. So I’m on
+the hunt for some robust, flexible frameworks with a solid community.
+
+This may become the seed of a collection turns into its own
+page. Herewith, in no particular order
+
+## clai
+
+[`clai`][1] from Pydantic AI
+
+> Pydantic AI comes with a CLI, clai (pronounced "clay") which you can
+> use to interact with various LLMs from the command line. It provides a
+> convenient way to chat with language models and quickly get answers
+> right in the terminal. 
+
+> We originally developed this CLI for our own use, but found ourselves
+> using it so frequently that we decided to share it as part of the
+> Pydantic AI package. 
+
+> We plan to continue adding new features, such as interaction with MCP
+> servers, access to tools, and more. 
+
+I like Pydantic.AI’s design sensibility so I’m favorable to solutions
+that build on top of their framework.
+
+## chatlas
+
+[chatlas][2] is from the fine folks at Posit. The tagline:
+
+> Your friendly guide to building LLM chat apps in Python with less
+> effort and more clarity.
+
+Based upon documentation looks like a well designed framework that’s
+independent of the major Python AI client frameworks.
+
+## AIChat
+
+[AIChat][3] is more shrink wrapped but if extensible enough could
+provide a polished foundation.
+
+> AIChat is an all-in-one LLM CLI tool featuring Shell Assistant, CMD
+> & REPL Mode, RAG, AI Tools & Agents, and More. 
+
+## gptme
+
+[gptme][4] seems similar in spirit to AIChat but leans a bit more extensible
+
+> gptme is a personal AI assistant and agent platform that runs in
+> your terminal and browser, equipped with powerful tools to execute
+> code, edit files, browse the web, and more - acting as an
+> intelligent copilot for your computer.
+
+...
+
+> gptme is a chat-CLI for LLMs, empowering them with tools to run
+> shell commands, execute code, read and manipulate files, and more. 
+
+
+[1]: https://ai.pydantic.dev/cli/
+[2]: https://posit-dev.github.io/chatlas
+[3]: https://github.com/sigoden/aichat
+[4]: https://gptme.org/
