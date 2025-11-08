@@ -1,0 +1,139 @@
+---
+title: "Agentic AI Certification"
+date: 2025-11-07
+author: "Brian M. Dennis"
+draft: false
+---
+
+## The Achievement
+
+I completed [Andrew Ng][4]’s course ["Agentic AI"][2] at
+DeepLearning.AI and received [a certificate of completion][5] for it.
+Previously the site only had "accomplishments" for short
+courses. Recently they started providing [a premium model][3] that
+awards certificates for more substantive work including graded quizzes
+and Jupyter Notebook labs. Can’t say it was particularly challenging
+but it was a step up from just working through video presentations.
+
+Quoting liberally from course welcome transcript:
+
+> Welcome to this course on Agentic AI. When I coined the term agentic
+> to describe what I saw as an important and rapidly growing trend in
+> how people were building on-base applications, what I did not realize
+> was that a bunch of marketers would get hold of this term and use it
+> as a sticker and put this on almost everything in sight. And that has
+> caused hype on Agentic AI to skyrocket. The good news though is that
+> ignoring the hype, the number of truly valuable and useful
+> applications built using Agentic AI has also grown very rapidly, even
+> if not quite as rapidly as the hype. And in this course, what I'd like
+> to do is show you best practices for building Agentic AI
+> applications. 
+
+It’s interesting that DeepLearning.AI ventured out into it’s own
+course certificates. Ng has long standing connections with
+[Coursera](https://coursera.com) which would seem a natural
+venue. Indeed some DeepLearning.AI courses appear on that site. Even
+though I have an old account on Coursera, I find the topic focus at
+DeepLearning.AI to be preferable at this stage. The catalog on the
+older MOOC _(does anyone still use that term?)_ sites can be a bit
+overwhelming.
+
+## Course Thoughts
+
+The course content was a nice high level overview of the agentic AI
+approach. By the end I arrived at the conclusion that this is simply a
+coding pattern and architecture for integrating LLMs into a software
+project. I shiver a little bit at some of the anthropomorphization
+applied but understand it as an organizing principle.
+
+Always be asking whether an agentic architecture is actually required
+or beneficial. This approach adds complexity and fragility on top of
+probabilistic mechanisms. It better have high ROI.
+
+#### Module 1: Introduction to Agentic Workflows
+
+This segment was a pretty typical course overview. What’s going to be
+covered. Why it’s important. What are the key concepts to take away. A
+little bit of lab environment setup.
+
+I resonated with two things. One, much of the work is about breaking
+down complex tasks into smaller units. Two, systematic error analysis
+and evaluation is crucial. I’m already in the tank on this point, but
+hearing it again from a recognized expert was just further confirmation.
+
+#### Module 2: Reflection Design Pattern
+
+Nothing huge in this section, other than the notion of taking LLM
+responses and feeding them back to the model for "reflection",
+a.k.a. critiquing the response and generating revised output. 
+
+In the reflection process, external context (e.g. compiler error
+messages for coding reflection) can be incorporated. Also, the
+reflection task can be handed off to another model or model
+configuration (e.g. different system prompt).
+
+#### Module 3: Tool use
+
+Tool use for this course’s purposes is dynamic code invocation broadly
+construed. This aligns with industry standard practice. The tool use
+can come from generating code to run (preferably in an execution
+sandbox) or invocation through an MCP server.
+
+#### Module 4: Practical Tips for Building Agentic AI
+
+This section discusses evaluation, error analysis, and performance
+tradeoffs. Hamel Husain has [a ridiculously deep FAQ on evals][6]
+that’s the next level down:
+
+> This document curates the most common questions Shreya and I
+> received while teaching 700+ engineers & PMs AI Evals. Warning:
+> These are sharp opinions about what works in most cases. They are
+> not universal truths. Use your judgment. 
+
+I do have a minor complaint that evals folks always mention "traces"
+but don’t endorse practical observability infrastructure.
+
+#### Module 5: Patterns for Highly Autonomous Agents
+
+Mostly a discussion of how multiple agents communicate for
+orchestration. Three basic patterns emerge:
+
+- Sequential pipelined workflow, agent to agent to agent ...
+- Hierarchical communication with a centralized orchestration agent
+- All to all communication _(not really sure how to make this work)_
+
+As a former messaging nerd, this tickles so many downstream
+infrastructure questions, but that’s for another time.
+
+## Conclusion
+
+Tom Ptacek probably said it best with [_You Should Write an Agent_][7]
+
+> Some concepts are easy to grasp in the abstract. Boiling water:
+> apply heat and wait. Others you really need to try. You only think
+> you understand how a bicycle works, until you learn to ride one. 
+>
+> There are big ideas in computing that are easy to get your head
+> around. The AWS S3 API. It’s the most important storage technology
+> of the last 20 years, and it’s like boiling water. Other
+> technologies, you need to get your feet on the pedals first. 
+>
+> LLM agents are like that.
+
+I’m not sure everyone **actually** needs to write one. But if you’re
+into AI engineering you should definitely **use** some agents and
+probably **dive into** a few agent implementations.
+
+## The Certificate
+
+Pics or it didn’t happen.
+
+![Deep Learning AI - Agentic AI Certificate][1]
+
+[1]: certificate.png
+[2]: https://learn.deeplearning.ai/courses/agentic-ai
+[3]: https://www.deeplearning.ai/the-batch/announcing-the-deeplearning-ai-pro-membership/
+[4]: https://www.andrewng.org
+[5]: https://learn.deeplearning.ai/certificates/854f18a4-da20-4dfc-841f-8c04d0f44ed5
+[6]: https://hamel.dev/blog/posts/evals-faq/
+[7]: https://fly.io/blog/everyone-write-an-agent/
