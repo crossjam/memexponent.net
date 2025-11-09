@@ -2,6 +2,7 @@
 title: "Agentic AI Certification"
 date: 2025-11-07
 author: "Brian M. Dennis"
+categories: ["ai", "courses", "agents"]
 draft: false
 ---
 
