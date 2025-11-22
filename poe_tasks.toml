@@ -1,0 +1,8 @@
+[tool.poe.tasks.render_preview]
+shell = "QUARTO_MARIMO_VERSION=0.14.8 quarto preview --port 8888 --host 0.0.0.0"
+
+[tool.poe.tasks.render_production]
+cmd = "quarto render --profile production"
+
+[tool.poe.tasks.publish]
+cmd = "rsync -hi -avz _site/ caddy-bmdphd:memexponent-site/"
