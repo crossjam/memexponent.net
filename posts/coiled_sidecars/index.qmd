@@ -1,0 +1,114 @@
+---
+title: "Coiled, MLflow, and Me"
+date: 2025-11-21
+author: "Brian M. Dennis"
+draft: false
+categories: [coiled, mlflow]
+---
+
+## Coiled Sidecars 
+
+About a month ago, the fine folks at
+[Coiled](https://coiled.io) announced [an integration][1] with
+[MLflow](https://mlflow.org)
+
+> Coiled lets you run ephemeral clusters in the cloud. We introduce
+> sidecars to run arbitrary containers alongside your workload, and
+> filestores to sync local data to the cloud and persist data across
+> runs. We use them to run an MLflow server concurrently with model
+> training. 
+
+> MLflow is a widely used open source tool for ML experiment tracking,
+> model packaging, registry management, and deployment. Some people
+> host their own server, but many use a hosted solution. Our users
+> asked us about running MLflow on Coiled, and, using some new
+> features, we finally found a way that aligns with Coiled’s principle
+> of only paying for what you use. It’s idiosyncratic, but it works
+> quite well. 
+
+This is amusing because in a previous gig I was a heavy user of both
+Coiled and MLflow. Like the "Some people" noted above, we hosted our
+own server to start, on a precious VM in the cloud. Then I managed to
+get a containerized version going with Kubernetes in the cloud. The
+MLflow server persistence was backed with Postgres and AWS S3. Even
+threw on some IaC with OpenTofu for deployment. 
+
+So of course I had a conversation with Coiled staff about how and why
+we put the two things together. It came about via a marketing(ish)
+call to discuss why [Coiled batch][3] worked so well for us. TL;DR
+[the SLURM style][2] is great for long running machine learning
+training jobs.
+
+Not taking any credit but I feel the team had started thinking about
+deploying MLflow but hadn’t noodled out a solution. I might have
+mentioned something about ephemeral MLflow frontends being a feature I
+could see providing utility. Would have needed some validation work
+though. MLflow is really great as an experiment tracker for PyTorch so
+clean integration with Coiled is attractive.
+
+I will take some credit to hipping the key developer to [`uvx`][5]
+though 🤣.
+
+## Further Thinking
+
+In any event, Coiled has a cute little design to make this
+work. Sidecars for a batch job can be specified using a YAML file
+reminiscent of Docker Compose. Containers can run on the centralized
+Dask scheduler that underlies Coiled jobs, or on each launched worker
+process. 
+
+[Filestores][4] seem like a thin layer over S3 with some convenient
+syncing. I’m mildly curious if and/or how this supports the Postgres
+storage needed for a MLflow server. Maybe they don’t use Postgres
+underneath. Unfortunately, since I don’t use Coiled regularly any
+more, I’m not curious enough to chase this down.
+
+Sidecars appear to be fairly general. I couldn’t see any restrictions
+on the sidecar containers. If so the entire universe of isolated
+processes is available.
+
+A crazy idea I had was to deploy [NATS](https://nats.io), a container
+friendly messaging framework, via sidecars into Coiled jobs. Then
+workers could communicate with each other over NATS for coordination
+purposes. Dask probably has some flexible messaging mechanisms baked
+in but this could be an escape hatch for approaches that don’t fit
+into its model. Alternatively, view it as an alternative coordination
+mechanism that enables other computational styles within Coiled’s
+"disposable" compute approach. 
+
+One more silly idea on top of NATS via sidecars would be to
+use it as an alternative logging framework instead of the
+one baked into the cloud provider (e.g., AWS CloudWatch).
+With some ingenious proxying or overlay networking _(cough
+Tail, cough scale)_, you could egress to off-cloud
+infrastructure in real-time.
+
+Actually, it’s not all that silly an idea. I just saw a
+[recent post][6] from a respected open source engineer, Sam Ruby,
+applying NATS and Vector for unified logging in distributed
+Rails apps.
+
+> Distributed applications need centralized logs. When your Rails app
+> runs across Fly.io, Hetzner, and a Mac Mini at home, unified logging
+> eliminates context-switching and speeds up debugging. 
+> 
+> The pattern is straightforward:
+> 
+> 1. NATS as universal broker - Publish logs from all sources
+> 1. Vector for collection - Navigator integration makes it zero-config
+> 3. Simple web viewer - Real-time streaming to browser
+> 
+> The result is unified logging without operational complexity: no
+> vendor lock-in, no complex configuration, no logging fees. 
+> 
+> Start simple. Add Vector to Navigator. Deploy NATS and logger. View
+> logs from all environments in one interface. 
+> 
+
+
+[1]: https://docs.coiled.io/blog/mlflow-on-coiled-sidecars-filestores.html
+[2]: https://docs.coiled.io/blog/slurm-job-arrays.html
+[3]: https://docs.coiled.io/user_guide/batch.html
+[4]: https://docs.coiled.io/user_guide/data/filestores.html
+[5]: https://docs.astral.sh/uv/guides/tools/
+[6]: https://intertwingly.net/blog/2025/11/11/Unified-Logging-Navigator.html
