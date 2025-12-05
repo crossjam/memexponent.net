@@ -3,6 +3,7 @@ title: "How Language Models Think"
 date: 2025-12-05 12:30
 author: "Brian M. Dennis"
 draft: false
+categories: ["ai", "interpretability"]
 ---
 
 ## The Episode
