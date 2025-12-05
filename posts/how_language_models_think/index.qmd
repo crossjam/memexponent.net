@@ -1,0 +1,163 @@
+---
+title: "How Language Models Think"
+date: 2025-12-05 12:30
+author: "Brian M. Dennis"
+draft: false
+---
+
+## The Episode
+
+I have to admit that I was a bit skeptical when I saw this podcast
+title come across my aggregator. With a short running time and the Ben
+Lorica imprimatur, I gave it a shot. I'm glad I did.
+
+[How Language Models Think][1]
+
+> Emmanuel Ameisen, an interpretability researcher at Anthropic, joins
+> the podcast to demystify how large language models work. He explains
+> why LLMs are more like biological systems than computer programs,
+> sharing a mechanistic explanation for hallucinations and surprising
+> findings about how models reason internally. The discussion also
+> provides practical advice for developers on how to best leverage
+> these complex systems, emphasizing the importance of evaluation
+> suites and prompt engineering over fine-tuning. 
+
+If I were tweaking the title, I’d exchange "Think" for
+"Process". Fundamentally, when we use LLMs, they just continuously
+generate probability distributions over a fixed vocabulary. The AI app
+makes decisions, usually deterministically, to my understanding, about
+how to sample from that distribution. Effectively, though, the
+"thinking" is just a bunch of matrix multiplies, followed by a dice
+roll.
+
+Ameisen makes a convincing case that under close inspection,
+activations of certain segments of a large-scale deep neural network
+embody abstract concepts. Also, when the model is used for inference,
+it internally maintains multiple probability distributions in a
+"look-ahead" fashion.
+
+> #### What should developers building AI applications understand about model internals?
+> 
+> Three critical insights emerge from interpretability research:
+>
+> First, models can be understood—don’t treat them as impenetrable
+> black boxes. We can look inside and find rich, complex structures
+> that go far beyond simple “next-token prediction” or “pattern
+> matching.” 
+> 
+> Second, your intuitions about how models work are likely wrong in
+> important ways. Models plan ahead, maintain language-agnostic
+> concepts, and perform multi-step reasoning entirely within their
+> weights. When you see weird mistakes or inconsistent behavior, it’s
+> often because the model “picked the wrong algorithm” from multiple
+> internal approaches it’s running simultaneously. 
+>
+> Third, while this is early-stage research without immediate
+> production benefits, developers can experiment with open-source
+> tools on smaller models to develop better intuitions about model
+> behavior. This won’t immediately improve your applications, but it
+> builds understanding that can inform everything from prompt design
+> to system architecture decisions. 
+
+The linked show notes page has a nicely edited transcript, but the
+audio conversation is definitely worth a listen. As an AI engineer, I
+came away convinced that deep instrumentation of LLM inference is a
+useful avenue of exploration. As a Systems Guy (TM), there also seem
+to be tracing, observability, profiling, and debugging challenges that
+could be fun to dig into.
+
+I'm glad I ignored my initial knee-jerk reaction and gave this episode a listen.
+
+## The Tools
+
+Subsequently, I decided to seek out the open-source tools recommended
+to run on small local models. The show notes didn’t have any obvious
+links, so I ventured out searching with my fave engine
+[Kagi](https://kagi.com).
+
+First off, I found [_Transformer Circuits Thread_][4], a series of
+blog posts and notes by the Anthropic interpretability team.
+
+> A surprising fact about modern large language models is that nobody
+> really knows how they work internally. The Interpretability team
+> strives to change that — to understand these models to better plan
+> for a future of safe AI.
+
+This includes [_Circuit Tracing: Revealing Computational Graphs in
+Language Models_][5]
+
+> We introduce a method to uncover mechanisms underlying behaviors of
+> language models. We produce graph descriptions of the model’s
+> computation on prompts of interest by tracing individual
+> computational steps in a “replacement model”. This replacement model
+> substitutes a more interpretable component (here, a “cross-layer
+> transcoder”) for parts of the underlying model (here, the
+> multi-layer perceptrons) that it is trained to approximate. We
+> develop a suite of visualization and validation tools we use to
+> investigate these “attribution graphs” supporting simple behaviors
+> of an 18-layer language model, and lay the groundwork for a
+> companion paper applying these methods to a frontier model, Claude
+> 3.5 Haiku.
+
+and [_On the Biology of a Large Language Model_][6]
+
+> We investigate the internal mechanisms used by Claude 3.5 Haiku —
+> Anthropic's lightweight production model — in a variety of contexts,
+> using our circuit tracing methodology.
+
+I like the injection of updates into the flow. Updates are closer to
+working papers or tech notes. They are not completely finished
+products but are made available for early commentary from informed
+collaborators.
+
+Also, way down at the bottom, here’s the underlying inspiration:
+
+> About
+>
+> Can we reverse engineer transformer language models into
+> human-understandable computer programs? Inspired by the Distill
+> Circuits Thread, we’re going to try.
+> 
+> We think interpretability research benefits a lot from interactive
+> articles (see Activation Atlases for a striking example). Previously
+> we would have submitted to Distill, but with Distill on Hiatus,
+> we're taking a page from David Ha’s approach of simply creating
+> websites (eg. World Models) for research projects.
+> 
+> As part of our effort to reverse engineer transformers, we’ve
+> created several other resources besides our paper which we hope will
+> be useful. We’ve collected them on this website, and may add future
+> content here, or even collaborations with other institutions.
+
+Next there’s the [Safety Research GitHub Organization][3]. This may
+not be strictly limited to Anthropic participants.
+
+Finally, we have the [circuit-tracer][2] tool:
+
+> This library implements tools for finding circuits using features
+> from (cross-layer) MLP transcoders, as originally introduced by
+> Ameisen et al. (2025) and Lindsey et al. (2025).
+> 
+> Our library performs three main tasks.
+> 
+> - Given a model with pre-trained transcoders, it finds the circuit /
+>   attribution graph; i.e., it computes the direct effect that each
+>   non-zero transcoder feature, transcoder error node, and input
+>   token has on each other non-zero transcoder feature and output
+>   logit.
+> - Given an attribution graph, it visualizes this graph and allows
+>   you to annotate these features.
+> - Enables interventions on a model's transcoder features using the
+>   insights gained from the attribution graph; i.e. you can set
+>   features to arbitrary values, and observe how model output
+>   changes.
+
+N.B.: this seems to be an implementation independent of the Anthropic team.
+
+[1]: https://thedataexchange.media/emmanuel-ameisen-anthropic/
+[2]: https://github.com/safety-research/circuit-tracer
+[3]: https://github.com/safety-research
+[4]: https://transformer-circuits.pub
+[5]: https://transformer-circuits.pub/2025/attribution-graphs/methods.html
+[6]: https://transformer-circuits.pub/2025/attribution-graphs/biology.html
+
