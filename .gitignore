@@ -1,6 +1,8 @@
 /.quarto/
 /_site/
 
+*.bak
+
 **/*.quarto_ipynb
 /_extensions/
 /drafts.old/
