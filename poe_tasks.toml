@@ -7,3 +7,15 @@ cmd = "quarto render --profile production"
 
 [tool.poe.tasks.publish]
 cmd = "rsync --delete -hi -avz _site/ caddy-bmdphd:memexponent-site/"
+
+[tool.poe.tasks.audit]
+help = "Check locked dependencies for known vulnerabilities"
+shell = "uv export --frozen --all-groups --no-emit-project | uv run pip-audit --strict --disable-pip --require-hashes -r /dev/stdin"
+
+[tool.poe.tasks.bandit]
+help = "Scan project Python code for security issues"
+cmd = "uv run bandit -r . -x ./.venv,./_extensions,./_site,./.quarto"
+
+[tool.poe.tasks.qa]
+help = "Run all quality checks"
+sequence = ["audit", "bandit"]
