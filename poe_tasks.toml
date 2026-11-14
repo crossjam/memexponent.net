@@ -10,7 +10,7 @@ cmd = "rsync --delete -hi -avz _site/ caddy-bmdphd:memexponent-site/"
 
 [tool.poe.tasks.audit]
 help = "Check locked dependencies for known vulnerabilities"
-shell = "uv export --frozen --all-groups --no-emit-project | uv run pip-audit --strict --disable-pip --require-hashes -r /dev/stdin"
+shell = "set -o pipefail; uv export --frozen --all-groups --no-emit-project | uv run pip-audit --strict --disable-pip --require-hashes -r /dev/stdin"
 
 [tool.poe.tasks.bandit]
 help = "Scan project Python code for security issues"
