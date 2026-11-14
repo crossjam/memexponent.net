@@ -4,3 +4,5 @@
 **/*.quarto_ipynb
 /_extensions/
 /.venv/
+# roborev snapshots
+/.roborev/
