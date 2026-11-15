@@ -497,24 +497,43 @@ def lint(files, fix):
     shortcodes, math, and the front matter are never rewrapped. Exits
     non-zero when any file needs formatting, unless --fix rewrote it.
     """
+    top = None
     if not files:
         with repo.open_repo() as r:
-            files = draft_posts(repo.root(r) / POSTS_DIR)
-    unformatted = []
+            top = repo.root(r)
+            files = draft_posts(top / POSTS_DIR)
+    elif fix:
+        try:
+            with repo.open_repo() as r:
+                top = repo.root(r)
+        except click.ClickException:
+            pass  # files outside any repository: only a symlinked file itself is refused
+
+    formatted = {}
     for path in files:
         text = path.read_text(encoding="utf-8")
         try:
-            formatted = formatting.format_post(text)
+            new = formatting.format_post(text)
         except ValueError as e:
             raise click.ClickException(f"{path}: {e}") from None
-        if formatted == text:
-            continue
-        if fix:
-            path.write_text(formatted, encoding="utf-8")
+        if new != text:
+            formatted[path] = new
+
+    if fix:
+        # Never rewrite through a symlink; checked for every file before any is written
+        if linked := {p: link for p in formatted if (link := worktree.symlink_on_path(p, top))}:
+            names = ", ".join(f"{p} (via {link})" for p, link in linked.items())
+            raise click.ClickException(
+                f"refusing to rewrite through symlinks: {names}; nothing was changed"
+            )
+        for path, new in formatted.items():
+            path.write_text(new, encoding="utf-8")
             click.echo(click.style("✓ ", fg="green") + f"Formatted {path}")
-        else:
-            unformatted.append(path)
-            click.echo(f"{path} needs formatting")
+        return
+
+    unformatted = list(formatted)
+    for path in unformatted:
+        click.echo(f"{path} needs formatting")
     if unformatted:
         raise click.ClickException(
             f"{len(unformatted)} file(s) need formatting; run: post lint --fix"
@@ -549,6 +568,8 @@ class Squash:
     # The draft posts among the writes, already marked published
     posts: list[str] = field(default_factory=list)
     titles: list[str] = field(default_factory=list)
+    # The merged tree, before the posts are marked published
+    tree: ObjectID | None = None
 
 
 def plan_squash(r: Repo, branch: str, redate: bool, now: datetime) -> Squash:
@@ -571,7 +592,7 @@ def plan_squash(r: Repo, branch: str, redate: bool, now: datetime) -> Squash:
     # The merge stores the subtrees it builds, but not the root tree
     r.object_store.add_object(merged)
 
-    squash = Squash()
+    squash = Squash(tree=merged.id)
     for change in tree_changes(r.object_store, ours.tree, merged.id):
         new, old = change.new, change.old
         if change.type == CHANGE_DELETE or new is None:
@@ -595,7 +616,7 @@ def plan_squash(r: Repo, branch: str, redate: bool, now: datetime) -> Squash:
     return squash
 
 
-def unpublished_changes(r: Repo, branch: str) -> list[str]:
+def unpublished_changes(r: Repo, branch: str, preview: Squash | None = None) -> list[str]:
     """
     Paths the draft changed that main does not carry as the draft has them.
 
@@ -603,27 +624,33 @@ def unpublished_changes(r: Repo, branch: str) -> list[str]:
     draft and date fields, exactly as on the draft; every other file the
     draft adds, changes, or removes must match exactly. So a draft edited
     after it was published still counts as unpublished.
+
+    With preview, a squash not yet committed, main is taken to be what
+    committing it would make, so a dry run refuses as the real run would.
     """
     tip = repo.branch_commit(r, branch)
     main = repo.branch_commit(r, BASE_BRANCH)
     base = repo.merge_base(r, main, tip)
+    main_tree = preview.tree if preview and preview.tree else main.tree
+    published = set(preview.posts) if preview else set()
     missing = []
     for change in tree_changes(r.object_store, base.tree if base else None, tip.tree):
         new, old = change.new, change.old
         if change.type == CHANGE_DELETE or new is None:
-            if old is not None and repo.in_tree(r, main.tree, old.path.decode()):
+            if old is not None and repo.in_tree(r, main_tree, old.path.decode()):
                 missing.append(old.path.decode())
             continue
         try:
-            mode, sha = tree_lookup_path(r.__getitem__, main.tree, new.path)
+            mode, sha = tree_lookup_path(r.__getitem__, main_tree, new.path)
         except KeyError:
             missing.append(new.path.decode())
             continue
         if repo.is_post(new.path):
             ours, theirs = repo.blob_data(r, sha).decode(), repo.blob_data(r, new.sha).decode()
-            same = not metadata.is_draft(ours) and metadata.without_publication(
-                ours
-            ) == metadata.without_publication(theirs)
+            marked = new.path.decode() in published or not metadata.is_draft(ours)
+            same = marked and metadata.without_publication(ours) == metadata.without_publication(
+                theirs
+            )
         else:
             same = sha == new.sha and mode == new.mode
         if not same:
@@ -631,15 +658,16 @@ def unpublished_changes(r: Repo, branch: str) -> list[str]:
     return missing
 
 
-def finish(plan: Plan, r: Repo, branch: str, *, check: bool = True) -> None:
+def finish(plan: Plan, r: Repo, branch: str, *, preview: Squash | None = None) -> None:
     """
     Push main, then delete the published draft branch on the drafts remote and here.
 
     Refuses, before changing anything, unless main carries everything on the
-    local draft and the drafts remote has nothing newer than it.
+    local draft and the drafts remote has nothing newer than it. preview is
+    the squash a dry run has not committed, to check against instead of main.
     """
     slug = shlex.quote(branch.removeprefix(DRAFT_PREFIX))
-    if check and (unpublished := unpublished_changes(r, branch)):
+    if unpublished := unpublished_changes(r, branch, preview):
         raise click.ClickException(
             f"{BASE_BRANCH} does not have {', '.join(unpublished)} published as on {branch}; "
             f"publish it with: post publish draft {slug}"
@@ -697,7 +725,7 @@ def publish_draft(name, redate, push, dry_run):
         plan(f'Commit "{message}" on {BASE_BRANCH}', lambda: commit(r, [], message))
 
         if push:
-            finish(plan, r, branch, check=not dry_run)
+            finish(plan, r, branch, preview=squash if dry_run else None)
         elif not dry_run:
             click.echo(
                 f"\nNext: post publish finish {shlex.quote(branch.removeprefix(DRAFT_PREFIX))}"

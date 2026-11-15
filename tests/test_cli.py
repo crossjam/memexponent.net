@@ -804,3 +804,121 @@ def test_pre_push_guard_hands_the_ref_updates_on(blog):
     )
     assert refused.returncode == 1
     assert "refusing to push refs/heads/draft/x" in refused.stderr
+
+
+@pytest.mark.parametrize(
+    ("url", "ok"),
+    [
+        ("git@github.com:crossjam/memexponent.drafts.git", True),
+        ("git@github.com:crossjam/memexponent.drafts", True),
+        ("ssh://git@github.com/crossjam/memexponent.drafts.git", True),
+        ("https://github.com/crossjam/memexponent.drafts.git", True),
+        ("/home/me/crossjam/memexponent.drafts.git", True),
+        ("file:///home/me/crossjam/memexponent.drafts.git", True),
+        ("https://attacker.example/crossjam/memexponent.drafts.git", False),
+        ("git@evil.example:crossjam/memexponent.drafts.git", False),
+        ("git@github.com:crossjam/memexponent.drafts.evil.git", False),
+        ("git@github.com:someone/crossjam/memexponent.drafts.git", False),
+        ("git@github.com:crossjam/memexponent.net.git", False),
+    ],
+)
+def test_drafts_url_must_be_the_drafts_repository(url, ok):
+    from memexponent import repo
+
+    assert repo.is_drafts_url(url) is ok
+
+
+def test_pre_push_guard_refuses_a_look_alike_drafts_url(blog):
+    run("./install-draft-hooks.sh", cwd=blog)
+    hook = blog / ".git" / "hooks" / "pre-push"
+    draft = "refs/heads/draft/x aaa refs/heads/draft/x bbb\n"
+    for url, code in [
+        ("https://attacker.example/crossjam/memexponent.drafts.git", 1),
+        ("git@github.com:crossjam/memexponent.drafts.git", 0),
+    ]:
+        result = subprocess.run(
+            [str(hook), "drafts", url], check=False, input=draft, text=True, capture_output=True
+        )
+        assert result.returncode == code, url
+
+
+def test_lint_fix_refuses_to_rewrite_through_a_symlink(blog, tmp_path):
+    long = " ".join(["word"] * 40)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "index.qmd").write_text(f"---\ntitle: Out\ndraft: true\n---\n\n{long}\n")
+    (blog / "posts" / "linked").symlink_to(outside)
+    (blog / "posts" / "here").mkdir()
+    here = post(blog, "here")
+    here.write_text(f"---\ntitle: Here\ndraft: true\n---\n\n{long}\n")
+
+    result = CliRunner().invoke(cli, ["lint", "--fix"])
+    assert result.exit_code == 1
+    assert "refusing to rewrite through symlinks" in result.output
+    assert (outside / "index.qmd").read_text().endswith(f"{long}\n")
+    # Nothing is rewritten when any file is refused
+    assert here.read_text().endswith(f"{long}\n")
+
+
+def test_dry_run_publish_push_refuses_as_the_real_run_would(blog):
+    # The draft and main both edit the old post, so publishing merges them and main
+    # will not carry the post as the draft has it: finishing must refuse
+    start_draft("Both")
+    post(blog, "old").write_text(OLD_POST + "\nDraft addition.\n")
+    run("git", "commit", "-q", "-am", "Draft edit", cwd=blog)
+    commit_on_main(blog, "old", OLD_POST.replace("title: Old", "title: Old, Retitled"))
+    before = snapshot(blog)
+
+    result = CliRunner().invoke(cli, ["publish", "draft", "both", "--push", "--dry-run"])
+    assert result.exit_code == 1
+    assert "does not have posts/old/index.qmd published as on draft/both" in result.output
+    assert snapshot(blog) == before
+
+
+def draft_turns_assets_into_a_file(blog: Path, title: str) -> str:
+    """Track an assets/ directory on main, then start a draft that replaces it with a file."""
+    (blog / "assets").mkdir()
+    (blog / "assets" / "a.txt").write_text("a\n")
+    run("git", "add", "assets", cwd=blog)
+    run("git", "commit", "-q", "-m", "Assets", cwd=blog)
+    start_draft(title)
+    run("git", "rm", "-q", "-r", "assets", cwd=blog)
+    (blog / "assets").write_text("now a file\n")
+    run("git", "add", "assets", cwd=blog)
+    run("git", "commit", "-q", "-m", "Assets as a file", cwd=blog)
+    return run("git", "branch", "--show-current", cwd=blog).strip()
+
+
+def test_switch_replaces_a_directory_with_a_file(blog):
+    draft_turns_assets_into_a_file(blog, "Dir To File")
+    run("git", "switch", "-q", "main", cwd=blog)
+
+    result = CliRunner().invoke(cli, ["draft", "switch", "dir_to_file", "--no-update"])
+    assert result.exit_code == 0, result.output
+    assert (blog / "assets").read_text() == "now a file\n"
+    assert run("git", "status", "--porcelain", cwd=blog) == ""
+
+
+def test_switch_refuses_to_replace_a_directory_holding_untracked_files(blog):
+    draft_turns_assets_into_a_file(blog, "Keeps Notes")
+    run("git", "switch", "-q", "main", cwd=blog)
+    (blog / "assets" / "notes.txt").write_text("mine\n")
+
+    result = CliRunner().invoke(cli, ["draft", "switch", "keeps_notes", "--no-update"])
+    assert result.exit_code == 1
+    assert "untracked paths assets/notes.txt" in result.output
+    assert (blog / "assets" / "a.txt").read_text() == "a\n"
+    assert (blog / "assets" / "notes.txt").read_text() == "mine\n"
+    assert run("git", "branch", "--show-current", cwd=blog).strip() == "main"
+
+
+def test_merges_refuse_a_directory_becoming_a_file(blog):
+    draft_turns_assets_into_a_file(blog, "Merged")
+    run("git", "switch", "-q", "main", cwd=blog)
+    head = run("git", "rev-parse", "HEAD", cwd=blog)
+
+    result = CliRunner().invoke(cli, ["publish", "draft", "merged"])
+    assert result.exit_code == 1
+    assert "conflicts with main in assets; nothing was changed" in result.output
+    assert run("git", "rev-parse", "HEAD", cwd=blog) == head
+    assert (blog / "assets" / "a.txt").exists()

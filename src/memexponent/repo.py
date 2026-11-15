@@ -5,6 +5,7 @@ and pushed only to the private drafts remote, since origin is public.
 """
 
 import io
+import re
 import subprocess
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -25,8 +26,9 @@ BASE_BRANCH = "main"
 PUBLIC_REMOTE = "origin"
 DRAFTS_REMOTE = "drafts"
 DRAFTS_URL = "git@github.com:crossjam/memexponent.drafts.git"
-# Substring that identifies the drafts repository's URL, as in install-draft-hooks.sh
-DRAFTS_URL_PATTERN = "crossjam/memexponent.drafts"
+# The drafts repository on GitHub; install-draft-hooks.sh accepts the same URLs
+DRAFTS_HOST = "github.com"
+DRAFTS_REPO = "crossjam/memexponent.drafts"
 DRAFT_PREFIX = "draft/"
 POSTS_DIR = "posts"
 POST_FILE = "index.qmd"
@@ -215,6 +217,23 @@ def all_draft_slugs() -> list[str]:
         return []
 
 
+def is_drafts_url(url: str) -> bool:
+    """
+    Whether url names the drafts repository, and nothing that merely contains its name.
+
+    Accepts GitHub's SSH and HTTPS forms, and a path on this machine, which
+    is what the tests push to.
+    """
+    host, name = re.escape(DRAFTS_HOST), re.escape(DRAFTS_REPO) + r"(?:\.git)?"
+    forms = [
+        rf"git@{host}:{name}",
+        rf"ssh://git@{host}/{name}",
+        rf"https://{host}/{name}",
+        rf"(?:file://)?/(?:.*/)?{name}",
+    ]
+    return any(re.fullmatch(form, url) for form in forms)
+
+
 def guard_draft_push(repo: Repo, remote: str, branch: str) -> str:
     """
     The remote's URL, refusing to send a draft branch anywhere but the drafts repository.
@@ -224,7 +243,7 @@ def guard_draft_push(repo: Repo, remote: str, branch: str) -> str:
     url = remote_url(repo, remote)
     if url is None:
         raise click.ClickException(f"no '{remote}' remote")
-    if branch.startswith(DRAFT_PREFIX) and DRAFTS_URL_PATTERN not in url:
+    if branch.startswith(DRAFT_PREFIX) and not is_drafts_url(url):
         raise click.ClickException(f"refusing to push {branch} to {remote} ({url})")
     return url
 

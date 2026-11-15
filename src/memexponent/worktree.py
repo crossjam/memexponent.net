@@ -8,6 +8,9 @@ touched, so a refusal changes nothing:
 - a symlink stored in git is written as a symlink, and an existing
   symlink is replaced, never followed
 - removals come before writes, so a file can become a directory
+- a directory that becomes a file must hold nothing but the tracked files
+  going away; merges treat that case as a conflict anyway, but dulwich's
+  checkout would delete the tracked files, then stop partway
 """
 
 import os
@@ -73,6 +76,17 @@ def refuse_blocked(
     for name in names:
         if (parent := file_parent(top, name)) and not is_tracked(parent):
             untracked.add(parent)
+    # And a file replacing a directory needs everything in it to be going away
+    going = set(removes or [])
+    for name in names:
+        path = top / name
+        if path.is_dir() and not path.is_symlink():
+            untracked.update(
+                str(Path(root, f).relative_to(top))
+                for root, _, files in os.walk(path)
+                for f in files
+                if str(Path(root, f).relative_to(top)) not in going
+            )
     for name in names:
         path = top / name
         if path.is_symlink() and not path.resolve().is_relative_to(inside):
@@ -117,6 +131,18 @@ def write(r: Repo, name: str, data: bytes, mode: int) -> None:
 
 def remove(r: Repo, name: str) -> None:
     porcelain.remove(r, [str(repo.root(r) / name)])
+
+
+def symlink_on_path(path: Path, top: Path | None) -> Path | None:
+    """The symlink a write to path would go through, at path or a directory below top."""
+    path = path.absolute()
+    if path.is_symlink():
+        return path
+    if top is not None and path.is_relative_to(top.absolute()):
+        rel = path.relative_to(top.absolute())
+        if link := linked_parent(top.absolute(), str(rel)):
+            return top.absolute() / link
+    return None
 
 
 def check_switch(r: Repo, target: ObjectID, doing: str) -> None:

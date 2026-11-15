@@ -70,7 +70,9 @@ case another tool has rewritten a hook since.
 
 dulwich runs the commit hooks but not pre-push, so `post` enforces the
 same rule itself: it never pushes a `draft/*` branch to a URL other than
-the drafts repository's.
+the drafts repository's. Both accept only that repository's GitHub SSH
+and HTTPS URLs, or a path on this machine; a URL that merely contains
+`crossjam/memexponent.drafts` is refused.
 
 ## Drafts: `post draft`
 
@@ -214,6 +216,8 @@ work is never deleted:
   found, like `git push --force-with-lease`.
 
 A push the server refuses stops it there, before anything is deleted.
+`post publish draft --push --dry-run` runs the same checks against what
+the publish would commit, so it refuses where the real run would.
 
 ## Formatting: `post lint`
 
@@ -247,6 +251,11 @@ checked before anything is touched, so a refusal changes nothing:
   repository
 - a symlink stored in git is written as a symlink, and an existing
   symlink is replaced rather than followed
+- a directory a branch switch turns into a file must hold nothing
+  untracked
+
+`post lint --fix` follows the same rule for symlinks: it refuses to
+rewrite any file through one, and rewrites nothing if any is refused.
 
 That covers switching branches (dulwich's own checkout would write over
 untracked files), writing a new post, and every file a merge into a

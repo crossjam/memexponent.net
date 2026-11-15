@@ -18,8 +18,9 @@
 
 set -euo pipefail
 
-# Substring that identifies the private drafts repository's URL
-DRAFTS_URL_PATTERN="crossjam/memexponent.drafts"
+# The private drafts repository on GitHub; src/memexponent/repo.py accepts
+# the same URLs: SSH, HTTPS, or a path on this machine
+DRAFTS_REPO="crossjam/memexponent.drafts"
 
 MARK_BEGIN="# >>> memexponent draft guard >>>"
 MARK_END="# <<< memexponent draft guard <<<"
@@ -37,7 +38,11 @@ $MARK_BEGIN
 draft_guard_input="\$(mktemp)"
 cat > "\$draft_guard_input"
 case "\$2" in
-    *$DRAFTS_URL_PATTERN*) ;;
+    git@github.com:$DRAFTS_REPO|git@github.com:$DRAFTS_REPO.git|\\
+    ssh://git@github.com/$DRAFTS_REPO|ssh://git@github.com/$DRAFTS_REPO.git|\\
+    https://github.com/$DRAFTS_REPO|https://github.com/$DRAFTS_REPO.git|\\
+    /$DRAFTS_REPO|/$DRAFTS_REPO.git|/*/$DRAFTS_REPO|/*/$DRAFTS_REPO.git|\\
+    file:///*/$DRAFTS_REPO|file:///*/$DRAFTS_REPO.git) ;;
     *)
         while read -r local_ref _ remote_ref _; do
             case "\$local_ref \$remote_ref" in
