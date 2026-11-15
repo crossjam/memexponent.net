@@ -81,10 +81,12 @@ def refuse_blocked(
     for name in names:
         path = top / name
         if path.is_dir() and not path.is_symlink():
+            # os.walk lists a symlinked directory among dirs without entering it; count it
+            # as an entry of its own
             untracked.update(
                 str(Path(root, f).relative_to(top))
-                for root, _, files in os.walk(path)
-                for f in files
+                for root, dirs, files in os.walk(path)
+                for f in [*files, *(d for d in dirs if Path(root, d).is_symlink())]
                 if str(Path(root, f).relative_to(top)) not in going
             )
     for name in names:

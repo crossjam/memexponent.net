@@ -922,3 +922,15 @@ def test_merges_refuse_a_directory_becoming_a_file(blog):
     assert "conflicts with main in assets; nothing was changed" in result.output
     assert run("git", "rev-parse", "HEAD", cwd=blog) == head
     assert (blog / "assets" / "a.txt").exists()
+
+
+def test_switch_refuses_to_replace_a_directory_holding_an_untracked_symlink(blog, tmp_path):
+    draft_turns_assets_into_a_file(blog, "Keeps Link")
+    run("git", "switch", "-q", "main", cwd=blog)
+    (tmp_path / "elsewhere").mkdir()
+    (blog / "assets" / "linked").symlink_to(tmp_path / "elsewhere")
+
+    result = CliRunner().invoke(cli, ["draft", "switch", "keeps_link", "--no-update"])
+    assert result.exit_code == 1
+    assert "untracked paths assets/linked" in result.output
+    assert (blog / "assets" / "a.txt").read_text() == "a\n"

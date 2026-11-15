@@ -255,7 +255,9 @@ checked before anything is touched, so a refusal changes nothing:
   untracked
 
 `post lint --fix` follows the same rule for symlinks: it refuses to
-rewrite any file through one, and rewrites nothing if any is refused.
+rewrite a file that is a symlink, or one under a symlinked directory in
+the repository, and rewrites nothing if any is refused. A file you name
+outside the repository is rewritten wherever its path leads.
 
 That covers switching branches (dulwich's own checkout would write over
 untracked files), writing a new post, and every file a merge into a
