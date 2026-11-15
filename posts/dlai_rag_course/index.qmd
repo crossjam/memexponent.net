@@ -1,0 +1,127 @@
+---
+title: RAG in Action Certification
+date: '2026-01-20'
+author: Brian M. Dennis
+categories: [ai, courses, rag]
+draft: false
+---
+
+## The Certificate
+
+Back in November 2025, I completed the DeepLearning.AI
+[course offering on Retrieval Augmented Generation (RAG)][dlai-rag-course]. The
+site has rolled out a [Pro edition][dlai-membership], which provides courses
+with certifications. Earning the certificate was definitely more effort than
+short courses. [Zain Hasan][zain-hasan] presented excellently, and the lesson
+material significantly increased my knowledge of building RAG systems. Well
+worth the time spent.
+
+## Course Thoughts
+
+The major difference between this DeepLearning.AI certified course and short
+courses is the graded assignments. Each module has a graded quiz and a graded
+coding assignment via a Jupyter notebook. The quizzes were multiple choice and
+not too challenging. They were a nice speed bump check — usually one or two
+questions provoked some thought.
+
+The graded notebooks were arguably a bit too rigid but definitely useful in
+translating the learning-module concepts into code. The Python code required to
+pass consisted mostly of function calls, easily completed by reading the
+documentation. However, LLM prompts needed to be written in a few places; this
+turned out to require substantial effort and experimentation.
+
+Since they're downloadable, I'm curious about the reuse rights for the
+notebooks. A productive exercise might be transliteration from Jupyter into
+[Marimo].
+
+#### Module 1: RAG Overview
+
+This module provides a good explanation of the final processing phase of a
+typical LLM prediction. The model's final layer outputs a token probability
+distribution, which can be used to generate the next token in various ways.
+
+The module clearly presents three different information retrieval components:
+
+- Metadata filtering
+- Full-text search
+- Vector embedding (semantic) search
+
+#### Module 2: Information Retrieval and Search Functions
+
+A foundational overview of the information retrieval process. It gave
+insight into how [BM25 ranking][bm25-ranking] actually works and
+presented a well done explanation of how metadata filtering and
+semantic search fit into the retrieval process.
+
+- Retriever architecture
+- Metadata filtering
+- TF-IDF
+- BM25
+- Semantic search
+- Hybrid search
+- Embedding model deep-dive
+
+#### Module 3: Information Retrieval with Vector Databases
+
+I learned a lot from this section. The ANN portion covered how [Hierarchical
+Navigable Small World (HNSW)][hnsw] search works. Chunking and query parsing explained
+the fundamental trade-offs for each portion of the pipeline. Cross-encoders and
+reranking dove deeper into how each of these approaches can improve RAG systems.
+I’d heard of cross-encoding and ColBERT, but this was my introduction to the
+practicalities of those techniques.
+
+- Approximate nearest neighbors (ANN) algorithms
+- Vector databases
+- Chunking
+- Advanced chunking techniques
+- Query parsing
+- Cross-encoders and ColBERT
+- Reranking
+
+#### Module 4: LLMs and Text Generation
+
+This module covers details of LLM sampling strategies for RAG systems that I
+don't think many are aware of. These are just the highlights — the section
+included many other useful lessons as well.
+
+- Transformer architecture
+- LLM sampling strategies
+- LLM selection
+- Prompt engineering: augmented prompts
+- Prompt engineering: advanced techniques
+- Hallucinations
+- Evaluations
+- Agentic RAG
+- RAG vs. fine-tuning
+
+#### Module 5: RAG Systems in Production
+
+Most importantly for me, this section covered a specific observability toolkit,
+[Phoenix from Arize][arize-phoenix], which filled a gap that often bothers me in
+evaluation discussions. Otherwise, it was a solid survey of the issues and
+approaches for deploying RAG to production.
+
+- The challenge of production
+- Implementing RAG evaluation
+- Logging, monitoring, and observability
+- Customized evaluation
+- Quantization
+- Cost vs. response quality
+- Latency vs. response quality
+- Security
+- Multimodal RAG
+
+## The Certificate
+
+Pics or it didn't happen.
+
+![Deep Learning AI - Agentic AI Certificate][certificate]
+
+[arize-phoenix]: https://phoenix.arize.com
+[bm25-ranking]: https://en.wikipedia.org/wiki/Okapi_BM25
+[certificate]: rag_course_certificate.png
+[dlai-membership]: https://learn.deeplearning.ai/membership
+[dlai-rag-course]: https://learn.deeplearning.ai/courses/retrieval-augmented-generation/
+[marimo]: https://marimo.io/
+[zain-hasan]: https://zainhas.github.io
+[hnsw]: https://en.wikipedia.org/wiki/Hierarchical_navigable_small_world
