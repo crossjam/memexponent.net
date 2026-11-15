@@ -1,5 +1,5 @@
 [tool.poe.tasks.render_preview]
-env = { QUARTO_MARIMO_VERSION = "0.14.8" }
+env = { QUARTO_MARIMO_VERSION = "0.25.2" }
 cmd = "quarto preview --port 8888 --host 0.0.0.0"
 
 [tool.poe.tasks.render_production]
@@ -7,3 +7,15 @@ cmd = "quarto render --profile production"
 
 [tool.poe.tasks.publish]
 cmd = "rsync --delete -hi -avz _site/ caddy-bmdphd:memexponent-site/"
+
+[tool.poe.tasks.audit]
+help = "Check locked dependencies for known vulnerabilities"
+shell = "set -o pipefail; uv export --frozen --all-groups --no-emit-project | uv run pip-audit --strict --disable-pip --require-hashes -r /dev/stdin"
+
+[tool.poe.tasks.bandit]
+help = "Scan project Python code for security issues"
+cmd = "uv run bandit -r . -x ./.venv,./_extensions,./_site,./.quarto"
+
+[tool.poe.tasks.qa]
+help = "Run all quality checks"
+sequence = ["audit", "bandit"]
