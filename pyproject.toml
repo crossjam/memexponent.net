@@ -1,18 +1,44 @@
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14"]
+build-backend = "uv_build"
+
 [project]
-name = "memexponent-net"
+name = "memexponent"
 version = "0.1.0"
-description = "Quarto source for the memexponent.net blog"
+description = "Quarto source and post tools for the memexponent.net blog"
+readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "click>=8.5.1",
+    "dulwich>=1.2.21",
+    "flowmark>=0.8.0",
+    "merge3>=1.0.0",
+    "pypandoc>=1.17",
+    "python-slugify>=9.1.3",
+]
+
+[project.scripts]
+post = "memexponent.cli:cli"
 
 [dependency-groups]
 dev = [
     "bandit>=1.9.4",
     "pip-audit>=2.10.1",
+    "pytest>=9.2.0",
+    "ruff>=0.17.4",
+    "ty>=0.0.100",
 ]
 
-[tool.uv]
-package = false
+[tool.pytest.ini_options]
+# anyio's plugin may be pulled in by a dependency, unused here, and warns on every run
+addopts = ["-p", "no:anyio"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.bandit]
+# The post CLI shells out to git hooks and pbpaste with fixed argument lists and no shell
+skips = ["B404", "B603", "B607"]
 
 [tool.poe]
 include = "poe_tasks.toml"

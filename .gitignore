@@ -9,3 +9,5 @@
 /.venv/
 # roborev snapshots
 /.roborev/
+__pycache__/
+*~

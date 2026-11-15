@@ -1,6 +1,10 @@
 project:
   type: website
   output-dir: _site
+  # Only pages: keeps docs/, src/, and tests/ out of the site
+  render:
+    - "*.qmd"
+    - "posts/**/*.qmd"
 
 website:
   title: "memexponent | Prototyping, Upskilling, & Engineering with AI"

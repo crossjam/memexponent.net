@@ -17,5 +17,5 @@ previewing: true
 ---
 
 ::: {.content-visible unless-profile="production"}
-[drafts](drafts/index.qmd)
+[drafts](drafts.qmd)
 :::
