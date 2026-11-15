@@ -1,5 +1,5 @@
 [tool.poe.tasks.render_preview]
-env = { QUARTO_MARIMO_VERSION = "0.14.8" }
+env = { QUARTO_MARIMO_VERSION = "0.25.2" }
 cmd = "quarto preview --port 8888 --host 0.0.0.0"
 
 [tool.poe.tasks.render_production]
