@@ -17,6 +17,12 @@ META_LINE = re.compile(r"^([A-Za-z][\w-]*):(.*)$")
 
 DATE_FORMAT = "%Y-%m-%d %H:%M"
 
+# A false scalar, quoted or not, with any trailing YAML comment
+FALSE = re.compile(r"""^(["']?)false\1\s*(?:#.*)?$""", re.IGNORECASE)
+
+# The fields publishing sets, which may differ between a draft and its published copy
+PUBLICATION_FIELDS = {"draft", "date"}
+
 
 def header_bounds(lines: list[str]) -> tuple[int, int]:
     """
@@ -65,7 +71,19 @@ def set_field(text: str, key: str, value: str) -> str:
 def is_draft(text: str) -> bool:
     """Whether a post is a draft; without its own draft field it inherits draft: true."""
     value = get_field(text, "draft")
-    return value is None or value.strip("\"'").lower() != "false"
+    return value is None or not FALSE.match(value)
+
+
+def without_publication(text: str) -> str:
+    """A post without the fields publishing sets, to compare a draft with its published copy."""
+    lines = text.splitlines()
+    start, end = header_bounds(lines)
+    kept = [
+        line
+        for line in lines[start:end]
+        if not ((m := META_LINE.match(line)) and m.group(1).lower() in PUBLICATION_FIELDS)
+    ]
+    return "\n".join([*lines[:start], *kept, *lines[end:]])
 
 
 def title_of(text: str) -> str | None:

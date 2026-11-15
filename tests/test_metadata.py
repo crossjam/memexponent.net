@@ -47,7 +47,14 @@ def test_publish_leaves_nested_front_matter_alone():
 
 @pytest.mark.parametrize(
     ("front", "draft"),
-    [("draft: true", True), ("draft: false", False), ('draft: "false"', False), ("", True)],
+    [
+        ("draft: true", True),
+        ("draft: false", False),
+        ('draft: "false"', False),
+        ("draft: false # published", False),
+        ("draft: true # not yet", True),
+        ("", True),
+    ],
 )
 def test_is_draft_defaults_to_draft_like_posts_metadata(front, draft):
     assert metadata.is_draft(f"---\ntitle: T\n{front}\n---\n\nBody.\n") is draft
@@ -58,3 +65,10 @@ def test_new_post_quotes_awkward_titles():
     assert metadata.get_field(text, "title") == '"Say \\"hi\\": a post"'
     assert metadata.get_field(text, "draft") == "true"
     assert metadata.is_draft(text)
+
+
+def test_publication_fields_are_all_that_may_differ():
+    published = metadata.publish_text(POST, redate=True, now=NOW)
+    assert metadata.without_publication(published) == metadata.without_publication(POST)
+    edited = POST.replace("with a colon", "with a fix")
+    assert metadata.without_publication(edited) != metadata.without_publication(POST)

@@ -62,7 +62,10 @@ hooks:
 
 The guards are inserted as marked blocks after the shebang, so hooks
 installed by other tools keep running everywhere except that
-post-commit case. `post draft new` re-runs the installer every time, in
+post-commit case. The pre-push guard saves the ref updates it reads and
+hands them back, so the rest of that hook still sees every one. The
+hooks go wherever git runs them from, including a `core.hooksPath`
+directory. `post draft new` re-runs the installer every time, in
 case another tool has rewritten a hook since.
 
 dulwich runs the commit hooks but not pre-push, so `post` enforces the
@@ -156,7 +159,9 @@ checks against `origin` as last fetched.
 `drafts` and locally, after asking to confirm (skip with `--yes`). It
 refuses when the local branch has commits that were never pushed,
 unless `--force` is given. Run on the draft itself, it switches to
-`main` first.
+`main` first. The branch on `drafts` is deleted only if it is still
+where the fetch found it, so a save from another machine in the
+meantime is never lost.
 
 Preview while writing with `uv run poe render_preview`. Drafts render
 with Quarto's draft styling and are listed on the preview-only
@@ -196,8 +201,19 @@ uv run post publish finish <slug>
 ```
 
 Pushes `main` to `origin`, then deletes `draft/<slug>` on `drafts` and
-locally. It refuses unless `main` already carries every post the draft
-touches as `draft: false`, so an unpublished draft is never deleted.
+locally. Before changing anything it checks two things, so unpublished
+work is never deleted:
+
+- `main` carries everything the draft changed: each post marked
+  `draft: false` and otherwise as on the draft (only its `draft` and
+  `date` fields may differ), and every other file exactly. A draft
+  edited after `post publish draft` counts as unpublished; publish it
+  again.
+- `drafts` has nothing newer than the local draft. It fetches first,
+  and deletes the remote branch only if it is still at the commit it
+  found, like `git push --force-with-lease`.
+
+A push the server refuses stops it there, before anything is deleted.
 
 ## Formatting: `post lint`
 
@@ -215,9 +231,26 @@ so only line breaks move: links, code spans, and HTML tags are never
 split, and the Markdown itself is left as written.
 
 Only plain paragraphs are rewrapped. The front matter, blockquotes,
-code cells, lists, tables, footnotes, HTML, fenced divs (`:::`),
-shortcodes (`{{< >}}`), display math (`$$`), and paragraphs with hard
-line breaks keep their lines exactly.
+code cells, lists, tables, footnotes, HTML, shortcodes (`{{< >}}`),
+display math (`$$`), and paragraphs with hard line breaks (two
+trailing spaces or a trailing backslash) keep their lines exactly.
+So does everything inside a fenced div (`:::`), `<pre>`, `<script>`,
+`<style>`, `<textarea>`, or HTML comment, across blank lines too.
+
+## How `post` Changes the Working Tree
+
+Every file `post` writes follows git's own rules, and all of them are
+checked before anything is touched, so a refusal changes nothing:
+
+- an untracked file is never written over; move it aside first
+- nothing is written through a symlinked directory, or outside the
+  repository
+- a symlink stored in git is written as a symlink, and an existing
+  symlink is replaced rather than followed
+
+That covers switching branches (dulwich's own checkout would write over
+untracked files), writing a new post, and every file a merge into a
+draft or a publish writes.
 
 ## Shell Completion
 

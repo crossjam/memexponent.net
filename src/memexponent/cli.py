@@ -1,6 +1,5 @@
 """post: start draft branches and publish them onto main."""
 
-import os
 import shlex
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -16,7 +15,7 @@ from dulwich.objects import Commit, ObjectID
 from dulwich.repo import Repo
 from slugify import slugify
 
-from . import formatting, metadata, repo
+from . import formatting, metadata, repo, worktree
 from .content import post_body, warn
 from .repo import BASE_BRANCH, DRAFT_PREFIX, DRAFTS_REMOTE, POSTS_DIR, PUBLIC_REMOTE
 
@@ -91,6 +90,8 @@ def switch_to_main(plan: Plan, r: Repo) -> None:
     repo.require_clean(r)
     ensure_main(plan, r)
     if repo.current_branch(r) != BASE_BRANCH:
+        target = repo.branch_commit(r, BASE_BRANCH).tree
+        worktree.check_switch(r, target, f"switching to {BASE_BRANCH}")
         plan(f"Switch to {BASE_BRANCH}", lambda: porcelain.checkout(r, BASE_BRANCH))
 
 
@@ -185,6 +186,9 @@ def draft_new(title, author, slug, source, clipboard, quote, edit, yes, dry_run)
         if repo.on_branch(r, BASE_BRANCH, post_dir):
             raise click.ClickException(f"{post_dir} is already a published post on {BASE_BRANCH}")
         require_drafts_remote(r)
+        main_tree = repo.branch_commit(r, BASE_BRANCH).tree
+        worktree.check_switch(r, main_tree, f"starting {branch} from {BASE_BRANCH}")
+        worktree.refuse_blocked(r, [relpath], f"writing {relpath}", [main_tree])
 
         body = formatting.format_body(post_body(source, clipboard, quote))
 
@@ -288,6 +292,8 @@ def draft_switch(name, update, dry_run):
                 f"Create {branch} from {DRAFTS_REMOTE}",
                 lambda: repo.create_branch(r, branch, tip, DRAFTS_REMOTE),
             )
+        target = repo.commit_at(r, r.refs[repo.to_ref(tip)]).tree
+        worktree.check_switch(r, target, f"switching to {branch}")
         plan(f"Switch to {branch}", lambda: porcelain.checkout(r, branch))
         if update:
             tip_commit = repo.commit_at(r, r.refs[repo.to_ref(tip)])
@@ -330,12 +336,15 @@ def update_draft(
                 removes.append(old.path.decode())
         else:
             writes[new.path.decode()] = (repo.blob_data(r, new.sha), new.mode)
-    refuse_blocked_writes(r, list(writes), f"merging {BASE_BRANCH}", [tip.tree, *(tracked or [])])
+    worktree.refuse_blocked(
+        r, list(writes), f"merging {BASE_BRANCH}", [tip.tree, *(tracked or [])], removes
+    )
 
-    for path, (data, mode) in writes.items():
-        plan(f"Write {path}", lambda p=path, d=data, m=mode: write_file(r, p, d, m))
+    # Removals first, so a file the merge replaces with a directory is out of the way
     for path in removes:
-        plan(f"Remove {path}", lambda p=path: porcelain.remove(r, [str(repo.root(r) / p)]))
+        plan(f"Remove {path}", lambda p=path: worktree.remove(r, p))
+    for path, (data, mode) in writes.items():
+        plan(f"Write {path}", lambda p=path, d=data, m=mode: worktree.write(r, p, d, m))
     message = f"Merge {BASE_BRANCH} into {branch}"
     plan(
         f'Commit "{message}"',
@@ -463,12 +472,18 @@ def draft_drop(name, force, yes, dry_run):
         if repo.current_branch(r) == branch:
             switch_to_main(plan, r)
         if remote:
-            plan(
-                f"Delete {branch} on {DRAFTS_REMOTE}",
-                lambda: repo.push(r, DRAFTS_REMOTE, branch, delete=True),
-            )
+            delete_remote_draft(plan, r, branch)
         if local:
             plan(f"Delete local branch {branch}", lambda: porcelain.branch_delete(r, branch))
+
+
+def delete_remote_draft(plan: Plan, r: Repo, branch: str) -> None:
+    """Delete the draft on the drafts remote, only if it is still where it was last fetched."""
+    expect = r.refs[repo.to_ref(f"refs/remotes/{DRAFTS_REMOTE}/{branch}")]
+    plan(
+        f"Delete {branch} on {DRAFTS_REMOTE}",
+        lambda: repo.delete_branch(r, DRAFTS_REMOTE, branch, expect),
+    )
 
 
 @cli.command()
@@ -576,77 +591,72 @@ def plan_squash(r: Repo, branch: str, redate: bool, now: datetime) -> Squash:
 
     # A file tracked in the current checkout is not untracked: switching to main deals with it
     tracked = [ours.tree, repo.commit_at(r, r.head()).tree]
-    refuse_blocked_writes(r, list(squash.writes), f"publishing {branch}", tracked)
+    worktree.refuse_blocked(r, list(squash.writes), f"publishing {branch}", tracked, squash.removes)
     return squash
 
 
-def refuse_blocked_writes(r: Repo, names: list[str], doing: str, tracked: list[ObjectID]) -> None:
+def unpublished_changes(r: Repo, branch: str) -> list[str]:
     """
-    Refuse writes over untracked files, or through a symlink that leads out of the tree.
+    Paths the draft changed that main does not carry as the draft has them.
 
-    A path in any of the tracked trees is not untracked, so it is fair to write.
+    A post counts when main has it marked draft: false and, apart from its
+    draft and date fields, exactly as on the draft; every other file the
+    draft adds, changes, or removes must match exactly. So a draft edited
+    after it was published still counts as unpublished.
     """
-    top = repo.root(r)
-    # The clean check ignores untracked files, so refuse to write over one, as git merge
-    # does; lexists so that a dangling symlink counts too
-    untracked = [
-        name
-        for name in names
-        if not any(repo.in_tree(r, tree, name) for tree in tracked) and os.path.lexists(top / name)
-    ]
-    # Never write through a symlink, at the path or any parent, that leads out of the tree
-    inside = top.resolve()
-    escaping = [name for name in names if not (top / name).resolve().is_relative_to(inside)]
-    for name in escaping:
-        warn(f"WARNING: {name} resolves outside the repository, to {(top / name).resolve()}")
-    if blocked := sorted(set(untracked) | set(escaping)):
-        raise click.ClickException(
-            f"{doing} would write over untracked or outside paths "
-            f"{', '.join(blocked)}; move or remove them first; nothing was changed"
-        )
-
-
-def write_file(r: Repo, name: str, data: bytes, mode: int) -> None:
-    dest = repo.root(r) / name
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_bytes(data)
-    dest.chmod(0o755 if mode & 0o100 else 0o644)
-    porcelain.add(r, [str(dest)])
-
-
-def unpublished_posts(r: Repo, branch: str) -> list[str]:
-    """Posts the branch adds or changes that main does not carry as published."""
     tip = repo.branch_commit(r, branch)
     main = repo.branch_commit(r, BASE_BRANCH)
     base = repo.merge_base(r, main, tip)
     missing = []
     for change in tree_changes(r.object_store, base.tree if base else None, tip.tree):
-        new = change.new
-        if change.type == CHANGE_DELETE or new is None or not repo.is_post(new.path):
+        new, old = change.new, change.old
+        if change.type == CHANGE_DELETE or new is None:
+            if old is not None and repo.in_tree(r, main.tree, old.path.decode()):
+                missing.append(old.path.decode())
             continue
         try:
-            _, sha = tree_lookup_path(r.__getitem__, main.tree, new.path)
+            mode, sha = tree_lookup_path(r.__getitem__, main.tree, new.path)
         except KeyError:
             missing.append(new.path.decode())
             continue
-        if repo.post_is_draft(r, sha):
+        if repo.is_post(new.path):
+            ours, theirs = repo.blob_data(r, sha).decode(), repo.blob_data(r, new.sha).decode()
+            same = not metadata.is_draft(ours) and metadata.without_publication(
+                ours
+            ) == metadata.without_publication(theirs)
+        else:
+            same = sha == new.sha and mode == new.mode
+        if not same:
             missing.append(new.path.decode())
     return missing
 
 
 def finish(plan: Plan, r: Repo, branch: str, *, check: bool = True) -> None:
-    """Push main, then delete the published draft branch on the drafts remote and here."""
-    if check and (unpublished := unpublished_posts(r, branch)):
+    """
+    Push main, then delete the published draft branch on the drafts remote and here.
+
+    Refuses, before changing anything, unless main carries everything on the
+    local draft and the drafts remote has nothing newer than it.
+    """
+    slug = shlex.quote(branch.removeprefix(DRAFT_PREFIX))
+    if check and (unpublished := unpublished_changes(r, branch)):
         raise click.ClickException(
-            f"{BASE_BRANCH} does not have {', '.join(unpublished)} published yet; "
-            f"publish it first with: post publish draft {branch.removeprefix(DRAFT_PREFIX)}"
+            f"{BASE_BRANCH} does not have {', '.join(unpublished)} published as on {branch}; "
+            f"publish it with: post publish draft {slug}"
+        )
+    require_drafts_remote(r)
+    plan.fetch(r, DRAFTS_REMOTE)
+    tracking = f"refs/remotes/{DRAFTS_REMOTE}/{branch}"
+    if newer := repo.commits_missing(r, tracking, f"refs/heads/{branch}"):
+        commits = "commit" if newer == 1 else "commits"
+        raise click.ClickException(
+            f"{DRAFTS_REMOTE} has {newer} {commits} on {branch} that are not here, "
+            f"so the draft was not deleted; get them with: post draft switch {slug}, "
+            "then publish again"
         )
     plan(f"Push {BASE_BRANCH} to {PUBLIC_REMOTE}", lambda: repo.push(r, PUBLIC_REMOTE, BASE_BRANCH))
-    if repo.ref_exists(r, f"refs/remotes/{DRAFTS_REMOTE}/{branch}"):
-        plan(
-            f"Delete {branch} on {DRAFTS_REMOTE}",
-            lambda: repo.push(r, DRAFTS_REMOTE, branch, delete=True),
-        )
+    if repo.ref_exists(r, tracking):
+        delete_remote_draft(plan, r, branch)
     plan(f"Delete local branch {branch}", lambda: porcelain.branch_delete(r, branch))
     if not plan.dry_run:
         click.echo("\nNext: deploy with uv run poe render_production, then uv run poe publish")
@@ -676,15 +686,13 @@ def publish_draft(name, redate, push, dry_run):
         switch_to_main(plan, r)
         squash = plan_squash(r, branch, redate, datetime.now())
 
-        # Stage only what the merge produced, never other untracked files
+        # Stage only what the merge produced, never other untracked files; removals
+        # first, so a file the merge replaces with a directory is out of the way
+        for path in squash.removes:
+            plan(f"Remove {path}", lambda p=path: worktree.remove(r, p))
         for path, (data, mode) in squash.writes.items():
             label = f"Write {path}" + (", marked published" if path in squash.posts else "")
-            plan(label, lambda p=path, d=data, m=mode: write_file(r, p, d, m))
-        for path in squash.removes:
-            plan(
-                f"Remove {path}",
-                lambda p=path: porcelain.remove(r, [str(repo.root(r) / p)]),
-            )
+            plan(label, lambda p=path, d=data, m=mode: worktree.write(r, p, d, m))
         message = f"Publish {', '.join(squash.titles)}"
         plan(f'Commit "{message}" on {BASE_BRANCH}', lambda: commit(r, [], message))
 
@@ -702,8 +710,9 @@ def publish_draft(name, redate, push, dry_run):
 def publish_finish(name, dry_run):
     """Push main and delete the published draft/SLUG, here and on the drafts remote.
 
-    Refuses unless main already carries the draft's posts as published,
-    so an unpublished draft is never deleted.
+    Refuses unless main carries everything on the draft, its posts marked
+    draft: false, and the drafts remote has nothing newer, so unpublished
+    work is never deleted.
     """
     branch = repo.draft_branch(name)
     plan = Plan(dry_run)

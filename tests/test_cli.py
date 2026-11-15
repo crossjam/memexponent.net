@@ -1,8 +1,10 @@
 """Drive both post commands against a throwaway repository."""
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import click
 import pytest
@@ -506,7 +508,7 @@ def test_update_refuses_to_overwrite_an_untracked_file(blog):
 
     result = CliRunner().invoke(cli, ["draft", "update"])
     assert result.exit_code == 1
-    assert "would write over untracked or outside paths styles.css" in result.output
+    assert "would write over untracked paths styles.css" in result.output
     assert (blog / "styles.css").read_text() == "mine\n"
 
 
@@ -587,3 +589,218 @@ def test_lint_reports_then_fixes_drafts(blog):
     assert all(len(line) <= 88 for line in draft.read_text().splitlines())
     assert runner.invoke(cli, ["lint"]).exit_code == 0
     assert runner.invoke(cli, ["lint", "posts/old/index.qmd"]).exit_code != 0
+
+
+# Writes that would clobber or escape: refused before anything changes
+
+
+def test_draft_new_refuses_an_untracked_post(blog):
+    notes = post(blog, "notes")
+    notes.parent.mkdir()
+    notes.write_text("Local notes, never committed.\n")
+
+    result = CliRunner().invoke(cli, ["draft", "new", "--title", "Notes", "--yes"])
+    assert result.exit_code == 1
+    assert "untracked paths posts/notes/index.qmd" in result.output
+    assert notes.read_text() == "Local notes, never committed.\n"
+    assert run("git", "branch", "--show-current", cwd=blog).strip() == "main"
+    assert run("git", "branch", "--list", "draft/*", cwd=blog) == ""
+
+
+def test_draft_new_refuses_a_symlinked_post_directory(blog, tmp_path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (blog / "posts" / "linked").symlink_to(outside)
+
+    result = CliRunner().invoke(cli, ["draft", "new", "--title", "Linked", "--yes"])
+    assert result.exit_code == 1
+    assert "symlinked directories posts/linked/index.qmd (via posts/linked)" in result.output
+    assert list(outside.iterdir()) == []
+    assert run("git", "branch", "--list", "draft/*", cwd=blog) == ""
+
+
+def test_switch_refuses_to_overwrite_an_untracked_file(blog):
+    start_draft("Has Post")
+    run("git", "switch", "-q", "main", cwd=blog)
+    mine = post(blog, "has_post")
+    mine.parent.mkdir()
+    mine.write_text("mine\n")
+
+    result = CliRunner().invoke(cli, ["draft", "switch", "has_post"])
+    assert result.exit_code == 1
+    assert "switching to draft/has_post would write over untracked paths" in result.output
+    assert mine.read_text() == "mine\n"
+    assert run("git", "branch", "--show-current", cwd=blog).strip() == "main"
+
+
+def test_publish_keeps_symlinks_as_symlinks(blog):
+    start_draft("Linking")
+    (post(blog, "linking").parent / "latest.qmd").symlink_to("index.qmd")
+    assert CliRunner().invoke(cli, ["draft", "save"]).exit_code == 0
+
+    result = CliRunner().invoke(cli, ["publish", "draft", "linking"])
+    assert result.exit_code == 0, result.output
+    link = post(blog, "linking").parent / "latest.qmd"
+    assert link.is_symlink()
+    assert os.readlink(link) == "index.qmd"
+    staged = run("git", "ls-files", "-s", "posts/linking/latest.qmd", cwd=blog)
+    assert staged.startswith("120000 ")
+
+
+def test_write_replaces_a_symlink_instead_of_following_it(blog, tmp_path):
+    from memexponent import repo, worktree
+
+    outside = tmp_path / "outside.css"
+    outside.write_text("theirs\n")
+    (blog / "styles.css").symlink_to(outside)
+
+    with repo.open_repo() as r:
+        worktree.write(r, "styles.css", b"ours\n", 0o100644)
+    assert outside.read_text() == "theirs\n"
+    assert not (blog / "styles.css").is_symlink()
+    assert (blog / "styles.css").read_text() == "ours\n"
+
+
+# Finishing: never delete draft work that main does not have
+
+
+def publish_then_edit(blog: Path, title: str, slug: str, edit) -> None:
+    """Start and publish a draft without finishing, then commit an edit on the draft."""
+    start_draft(title)
+    published = CliRunner().invoke(cli, ["publish", "draft", slug])
+    assert published.exit_code == 0, published.output
+    run("git", "switch", "-q", f"draft/{slug}", cwd=blog)
+    edit(post(blog, slug))
+    assert CliRunner().invoke(cli, ["draft", "save", "-m", "After publishing"]).exit_code == 0
+    run("git", "switch", "-q", "main", cwd=blog)
+
+
+def test_finish_refuses_a_draft_edited_after_publishing(blog):
+    publish_then_edit(
+        blog, "Edited", "edited", lambda p: p.write_text(p.read_text() + "\nA late fix.\n")
+    )
+
+    result = CliRunner().invoke(cli, ["publish", "finish", "edited"])
+    assert result.exit_code == 1
+    assert "does not have posts/edited/index.qmd published as on draft/edited" in result.output
+    assert "draft/edited" in run("git", "branch", "--list", "draft/*", cwd=blog)
+    assert "draft/edited" in run("git", "ls-remote", "--heads", "drafts", cwd=blog)
+
+
+def test_finish_refuses_a_file_added_after_publishing(blog):
+    publish_then_edit(
+        blog, "Late Figure", "late_figure", lambda p: (p.parent / "figure.png").write_bytes(b"png")
+    )
+
+    result = CliRunner().invoke(cli, ["publish", "finish", "late_figure"])
+    assert result.exit_code == 1
+    assert "posts/late_figure/figure.png" in result.output
+    assert "draft/late_figure" in run("git", "branch", "--list", "draft/*", cwd=blog)
+
+
+def test_finish_accepts_a_redated_post(blog):
+    start_draft("Redated")
+    run("git", "switch", "-q", "main", cwd=blog)
+    published = CliRunner().invoke(cli, ["publish", "draft", "redated", "--redate", "--push"])
+    assert published.exit_code == 0, published.output
+    assert run("git", "branch", "--list", "draft/*", cwd=blog) == ""
+
+
+def test_finish_refuses_when_drafts_has_newer_commits(blog, tmp_path):
+    start_draft("Shared")
+    run("git", "switch", "-q", "main", cwd=blog)
+    assert CliRunner().invoke(cli, ["publish", "draft", "shared"]).exit_code == 0
+    origin_main = run("git", "ls-remote", "origin", "refs/heads/main", cwd=blog)
+
+    # Another clone saves more of the draft after this one last fetched
+    drafts = run("git", "remote", "get-url", "drafts", cwd=blog).strip()
+    other = tmp_path / "other"
+    run("git", "clone", "-q", "-b", "draft/shared", drafts, str(other), cwd=tmp_path)
+    (other / "posts" / "shared" / "index.qmd").write_text("Written elsewhere.\n")
+    run(
+        "git", "-c", "user.name=T", "-c", "user.email=t@example.com",
+        "commit", "-q", "-am", "Elsewhere", cwd=other,
+    )  # fmt: skip
+    run("git", "push", "-q", "origin", "draft/shared", cwd=other)
+    newer = run("git", "rev-parse", "HEAD", cwd=other).strip()
+
+    result = CliRunner().invoke(cli, ["publish", "finish", "shared"])
+    assert result.exit_code == 1
+    assert "drafts has 1 commit on draft/shared that are not here" in result.output
+    remote = run("git", "ls-remote", "drafts", "refs/heads/draft/shared", cwd=blog).split()[0]
+    assert remote == newer
+    assert run("git", "ls-remote", "origin", "refs/heads/main", cwd=blog) == origin_main
+    assert "draft/shared" in run("git", "branch", "--list", "draft/*", cwd=blog)
+
+
+def test_delete_branch_refuses_a_tip_that_moved(blog):
+    from dulwich.objects import ObjectID
+
+    from memexponent import repo
+
+    start_draft("Leased")
+    tip = run("git", "rev-parse", "draft/leased", cwd=blog).strip()
+    stale = run("git", "rev-parse", "main", cwd=blog).strip()
+    with repo.open_repo() as r, pytest.raises(click.ClickException, match="has moved on"):
+        repo.delete_branch(r, "drafts", "draft/leased", ObjectID(stale.encode()))
+    remote = run("git", "ls-remote", "drafts", "refs/heads/draft/leased", cwd=blog).split()[0]
+    assert remote == tip
+
+
+def test_a_refused_push_stops_finish_before_deleting_anything(blog, monkeypatch):
+    from memexponent import repo
+
+    start_draft("Refused")
+    run("git", "switch", "-q", "main", cwd=blog)
+    tracking = run("git", "rev-parse", "origin/main", cwd=blog)
+
+    def refuse(r, remote, refspecs, **kwargs):
+        # As dulwich does: it moves the tracking ref, then reports the refusal in the result
+        r.refs[b"refs/remotes/origin/main"] = r.refs[b"refs/heads/main"]
+        return SimpleNamespace(ref_status={b"refs/heads/main": "pre-receive hook declined"})
+
+    monkeypatch.setattr(repo.porcelain, "push", refuse)
+    result = CliRunner().invoke(cli, ["publish", "draft", "refused", "--push"])
+    assert result.exit_code == 1
+    assert "pushing main to origin was refused: refs/heads/main: pre-receive hook declined" in (
+        result.output
+    )
+    assert run("git", "rev-parse", "origin/main", cwd=blog) == tracking
+    assert "draft/refused" in run("git", "branch", "--list", "draft/*", cwd=blog)
+    assert "draft/refused" in run("git", "ls-remote", "--heads", "drafts", cwd=blog)
+
+
+# Hook guards
+
+
+def test_hooks_install_where_core_hooks_path_points(blog):
+    run("git", "config", "core.hooksPath", "githooks", cwd=blog)
+    run("./install-draft-hooks.sh", cwd=blog)
+    assert "memexponent draft guard" in (blog / "githooks" / "pre-push").read_text()
+    assert "memexponent draft guard" in (blog / "githooks" / "post-commit").read_text()
+
+
+def test_pre_push_guard_hands_the_ref_updates_on(blog):
+    hook = blog / ".git" / "hooks" / "pre-push"
+    seen = blog / "seen"
+    hook.write_text(f'#!/bin/sh\ncat > "{seen}"\n')
+    hook.chmod(0o755)
+    run("./install-draft-hooks.sh", cwd=blog)
+
+    updates = "refs/heads/main aaa refs/heads/main bbb\n"
+    url = "git@github.com:crossjam/memexponent.net.git"
+    ok = subprocess.run([str(hook), "origin", url], check=False, input=updates, text=True, cwd=blog)
+    assert ok.returncode == 0
+    assert seen.read_text() == updates
+
+    draft = "refs/heads/draft/x aaa refs/heads/draft/x bbb\n"
+    refused = subprocess.run(
+        [str(hook), "origin", url],
+        check=False,
+        input=draft,
+        text=True,
+        cwd=blog,
+        capture_output=True,
+    )
+    assert refused.returncode == 1
+    assert "refusing to push refs/heads/draft/x" in refused.stderr

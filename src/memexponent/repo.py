@@ -12,9 +12,10 @@ from pathlib import Path
 
 import click
 from dulwich import porcelain
+from dulwich.client import get_transport_and_path
 from dulwich.errors import NotGitRepository
 from dulwich.object_store import tree_lookup_path
-from dulwich.objects import Blob, Commit, ObjectID
+from dulwich.objects import ZERO_SHA, Blob, Commit, ObjectID
 from dulwich.refs import HEADREF, Ref
 from dulwich.repo import Repo
 
@@ -214,41 +215,118 @@ def all_draft_slugs() -> list[str]:
         return []
 
 
-def push(repo: Repo, remote: str, branch: str, *, delete: bool = False) -> None:
+def guard_draft_push(repo: Repo, remote: str, branch: str) -> str:
     """
-    Push a branch, or delete it from the remote.
+    The remote's URL, refusing to send a draft branch anywhere but the drafts repository.
 
-    dulwich does not run the pre-push hook, so its draft guard is
-    enforced here: draft branches only ever go to the drafts repository.
+    dulwich does not run the pre-push hook, so its draft guard is enforced here.
     """
     url = remote_url(repo, remote)
     if url is None:
         raise click.ClickException(f"no '{remote}' remote")
     if branch.startswith(DRAFT_PREFIX) and DRAFTS_URL_PATTERN not in url:
         raise click.ClickException(f"refusing to push {branch} to {remote} ({url})")
+    return url
+
+
+def rejected_refs(result: object) -> dict[str, str]:
+    """The refs a push result reports the server refused, with its reasons."""
+    statuses = getattr(result, "ref_status", None) or {}
+    return {ref.decode(errors="replace"): error for ref, error in statuses.items() if error}
+
+
+def push(repo: Repo, remote: str, branch: str) -> None:
+    """
+    Push a branch, raising when the server refuses it.
+
+    dulwich can return normally after a refusal, listing it in the result,
+    and it moves the remote-tracking ref either way, so on failure the
+    ref is put back where it was.
+    """
+    guard_draft_push(repo, remote, branch)
+    tracking = to_ref(f"refs/remotes/{remote}/{branch}")
+    try:
+        before: ObjectID | None = repo.refs[tracking]
+    except KeyError:
+        before = None
 
     errors = io.BytesIO()
     try:
-        porcelain.push(
+        result = porcelain.push(
             repo,
             remote,
             [head_ref(branch)],
             outstream=io.BytesIO(),
             errstream=errors,
-            delete=delete,
-            set_upstream=not delete,
+            set_upstream=True,
         )
+        if rejected := rejected_refs(result):
+            reasons = "; ".join(f"{ref}: {error}" for ref, error in rejected.items())
+            raise click.ClickException(f"pushing {branch} to {remote} was refused: {reasons}")
+    except click.ClickException:
+        restore_ref(repo, tracking, before)
+        raise
     # dulwich's transports raise many unrelated exception types
     except Exception as e:  # noqa: BLE001
+        restore_ref(repo, tracking, before)
         detail = errors.getvalue().decode(errors="replace").strip()
         raise click.ClickException(f"pushing {branch} to {remote} failed: {e}\n{detail}".rstrip())
 
     # Keep the remote-tracking ref in step, as git push does
-    tracking = to_ref(f"refs/remotes/{remote}/{branch}")
-    if delete:
-        repo.refs.remove_if_equals(tracking, None)
+    repo.refs[tracking] = repo.refs[head_ref(branch)]
+
+
+def restore_ref(repo: Repo, ref: Ref, sha: ObjectID | None) -> None:
+    if sha is None:
+        if ref in repo.refs:
+            del repo.refs[ref]
     else:
-        repo.refs[tracking] = repo.refs[head_ref(branch)]
+        repo.refs[ref] = sha
+
+
+def delete_branch(repo: Repo, remote: str, branch: str, expect: ObjectID) -> None:
+    """
+    Delete branch on remote, but only while it is still at expect.
+
+    Like git push --force-with-lease: if the branch moved on since it was
+    last fetched, someone pushed work that is not here, so nothing is deleted.
+    """
+    url = guard_draft_push(repo, remote, branch)
+    ref = head_ref(branch)
+    found: dict[str, ObjectID | None] = {}
+
+    def update_refs(refs: dict[Ref, ObjectID]) -> dict[Ref, ObjectID]:
+        found["tip"] = refs.get(ref)
+        if found["tip"] != expect:
+            # Asking for no changes sends nothing
+            return {}
+        return {ref: ZERO_SHA}
+
+    try:
+        client, path = get_transport_and_path(url, config=repo.get_config_stack())
+        result = client.send_pack(
+            path.encode(), update_refs, generate_pack_data=lambda *a, **k: (0, iter([]))
+        )
+    # dulwich's transports raise many unrelated exception types
+    except Exception as e:
+        raise click.ClickException(f"deleting {branch} on {remote} failed: {e}") from e
+
+    tracking = to_ref(f"refs/remotes/{remote}/{branch}")
+    tip = found.get("tip")
+    if tip is None:
+        # Already gone; just drop the stale tracking ref
+        restore_ref(repo, tracking, None)
+        return
+    if tip != expect:
+        raise click.ClickException(
+            f"{branch} on {remote} has moved on since it was fetched, to {tip.decode()[:8]}; "
+            f"it has work that is not here, so it was not deleted; "
+            f"get it with: post draft switch {branch.removeprefix(DRAFT_PREFIX)}"
+        )
+    if rejected := rejected_refs(result):
+        reasons = "; ".join(f"{name}: {error}" for name, error in rejected.items())
+        raise click.ClickException(f"deleting {branch} on {remote} was refused: {reasons}")
+    restore_ref(repo, tracking, None)
 
 
 def install_hooks(repo: Repo) -> None:

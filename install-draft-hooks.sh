@@ -10,7 +10,9 @@
 # The guards are inserted as marked blocks right after the shebang, so
 # hooks installed by other tools stay in place and keep running, except
 # that on draft/* branches the post-commit guard ends the hook before
-# anything else in it runs. Re-running is safe, and
+# anything else in it runs. The pre-push guard hands its stdin back, so
+# the rest of that hook still sees every ref update. Hooks go wherever
+# git runs them from, core.hooksPath included. Re-running is safe, and
 # `post draft new` runs this on every invocation in case another tool
 # has rewritten a hook since.
 
@@ -22,12 +24,18 @@ DRAFTS_URL_PATTERN="crossjam/memexponent.drafts"
 MARK_BEGIN="# >>> memexponent draft guard >>>"
 MARK_END="# <<< memexponent draft guard <<<"
 
-HOOKS_DIR="$(git rev-parse --git-common-dir)/hooks"
+# Git's active hooks directory, which honors core.hooksPath
+HOOKS_DIR="$(git rev-parse --git-path hooks)"
+mkdir -p "$HOOKS_DIR"
 
 pre_push_block() {
     cat << EOF
 $MARK_BEGIN
-# Refuse to send draft/* branches to any remote but the private drafts repo
+# Refuse to send draft/* branches to any remote but the private drafts repo.
+# The ref updates on stdin are saved first and handed back afterwards, so the
+# rest of this hook still reads every one of them.
+draft_guard_input="\$(mktemp)"
+cat > "\$draft_guard_input"
 case "\$2" in
     *$DRAFTS_URL_PATTERN*) ;;
     *)
@@ -36,12 +44,17 @@ case "\$2" in
                 refs/heads/draft/*|*" refs/heads/draft/"*)
                     echo "pre-push: refusing to push \$local_ref to \$1 (\$2)." >&2
                     echo "pre-push: draft branches belong on the drafts remote: git push drafts <branch>" >&2
+                    rm -f "\$draft_guard_input"
                     exit 1
                     ;;
             esac
-        done
+        done < "\$draft_guard_input"
         ;;
 esac
+# The open descriptor keeps the saved input readable once the file is removed
+exec < "\$draft_guard_input"
+rm -f "\$draft_guard_input"
+unset draft_guard_input
 $MARK_END
 EOF
 }

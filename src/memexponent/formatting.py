@@ -33,6 +33,14 @@ BLOCK_LINE = re.compile(
 
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 
+# HTML whose content runs, blank lines and all, until its end marker: the raw text
+# elements, and comments
+RAW_OPEN = re.compile(r"^ {0,3}<(pre|script|style|textarea)(?=[\s>]|$)", re.IGNORECASE)
+COMMENT_OPEN = re.compile(r"^ {0,3}<!--")
+
+# A Quarto fenced div: colons and attributes open one, bare colons close it
+DIV_FENCE = re.compile(r"^ {0,3}:{3,}(.*)$")
+
 
 def split_header(text: str) -> tuple[str, str]:
     """Split a post into its front matter, kept verbatim, and its body."""
@@ -47,11 +55,16 @@ def blocks(body: str) -> list[tuple[list[str], bool]]:
     """
     Split a body into runs of lines, each flagged whether it is a fillable paragraph.
 
-    Blank lines and fenced code come back as runs of their own, never fillable.
+    Blank lines, fenced code, raw HTML such as <pre> and comments, and
+    everything inside fenced divs come back as runs of their own, never
+    fillable, since what they hold can run across blank lines.
     """
     runs: list[tuple[list[str], bool]] = []
     current: list[str] = []
     fence = ""
+    # The end marker of the raw HTML block we are in, and how deep in fenced divs
+    raw_end = ""
+    divs = 0
 
     def flush() -> None:
         if current:
@@ -63,11 +76,26 @@ def blocks(body: str) -> list[tuple[list[str], bool]]:
             runs.append(([line], False))
             if line.strip().startswith(fence) and not line.strip().strip(fence[0]):
                 fence = ""
+        elif raw_end:
+            runs.append(([line], False))
+            if raw_end in line.lower():
+                raw_end = ""
         elif m := FENCE.match(line):
             flush()
             fence = m.group(1)
             runs.append(([line], False))
-        elif not line.strip():
+        elif (m := RAW_OPEN.match(line)) or COMMENT_OPEN.match(line):
+            flush()
+            end = f"</{m.group(1).lower()}" if m else "-->"
+            # The end marker may close the block on its opening line
+            opening = line.lower()[line.lower().index("<") + 1 :]
+            raw_end = "" if end in opening else end
+            runs.append(([line], False))
+        elif m := DIV_FENCE.match(line):
+            flush()
+            divs = divs + 1 if m.group(1).strip() else max(divs - 1, 0)
+            runs.append(([line], False))
+        elif divs or not line.strip():
             flush()
             runs.append(([line], False))
         else:
@@ -77,8 +105,8 @@ def blocks(body: str) -> list[tuple[list[str], bool]]:
 
 
 def is_paragraph(lines: list[str]) -> bool:
-    # A line ending in two spaces is a hard break, which refilling would lose
-    return not any(BLOCK_LINE.match(line) or line.endswith("  ") for line in lines)
+    # A line ending in two spaces or a backslash is a hard break, which refilling would lose
+    return not any(BLOCK_LINE.match(line) or line.endswith(("  ", "\\")) for line in lines)
 
 
 def fill(lines: list[str]) -> list[str]:

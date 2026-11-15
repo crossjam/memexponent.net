@@ -104,3 +104,23 @@ def test_moves_only_line_breaks():
     out = format_body(body + "\n")
     assert out.split() == body.split()
     assert "`a b c`" in out
+
+
+def test_keeps_raw_html_across_blank_lines():
+    body = f"<pre>\n\nalpha\nbeta\n\n</pre>\n\n<!--\n\n{LONG}\n\n-->\n"
+    assert format_body(body) == body
+
+
+def test_keeps_everything_inside_fenced_divs():
+    body = f"::: {{.callout-note}}\n::: inner\n\n{LONG}\n\n:::\n\n{LONG}\n\n:::\n"
+    assert format_body(body) == body
+
+
+def test_wraps_again_after_a_div_or_raw_block_ends():
+    out = format_body(f"::: note\n:::\n\n<pre>x</pre>\n\n{LONG}\n")
+    assert len(out.splitlines()) > 5
+
+
+def test_keeps_backslash_hard_breaks():
+    body = "line one\\\nline two\n"
+    assert format_body(body) == body
