@@ -13,9 +13,32 @@ help = "Check locked dependencies for known vulnerabilities"
 shell = "set -o pipefail; uv export --frozen --all-groups --no-emit-project | uv run pip-audit --strict --disable-pip --require-hashes -r /dev/stdin"
 
 [tool.poe.tasks.bandit]
-help = "Scan project Python code for security issues"
-cmd = "uv run bandit -r . -x ./.venv,./_extensions,./_site,./.quarto"
+help = "Scan the post CLI for security issues"
+cmd = "uv run bandit -q -c pyproject.toml -r src"
+
+[tool.poe.tasks.lint]
+help = "Lint the post CLI and its tests with ruff"
+cmd = "uv run ruff check src tests"
+
+[tool.poe.tasks.format]
+help = "Format the post CLI and its tests with ruff"
+cmd = "uv run ruff format src tests"
+
+[tool.poe.tasks.typecheck]
+help = "Type-check the post CLI and its tests with ty"
+cmd = "uv run ty check src tests"
+
+[tool.poe.tasks.test]
+help = "Run the test suite"
+cmd = "uv run pytest -q"
 
 [tool.poe.tasks.qa]
-help = "Run all quality checks"
-sequence = ["audit", "bandit"]
+help = "Run every code check: format, lint, types, dependencies, security, tests"
+sequence = [
+  { cmd = "uv run ruff format --check src tests" },
+  "lint",
+  "typecheck",
+  "audit",
+  "bandit",
+  "test",
+]
