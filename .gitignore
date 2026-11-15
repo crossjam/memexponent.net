@@ -9,5 +9,6 @@
 /.venv/
 # roborev snapshots
 /.roborev/
+.kata.local.toml
 __pycache__/
 *~
