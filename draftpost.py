@@ -201,6 +201,11 @@ def get_output_directory(cli_dir: Optional[str] = None) -> Path:
     return repo_root / "drafts" / "posts"
 
 
+def is_safe_slug(slug: str) -> bool:
+    """Return True if slug is a single path component that stays in its directory."""
+    return bool(slug) and slug not in (".", "..") and Path(slug).name == slug and "\\" not in slug
+
+
 def create_post(
     title: str,
     author: str,
@@ -226,6 +231,8 @@ def create_post(
         slug = slugify(title)
     if not slug:
         raise ValueError("title must contain at least one letter or digit")
+    if not is_safe_slug(slug):
+        raise ValueError(f"slug must not contain path components: {slug!r}")
 
     # Ensure output directory exists
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -402,6 +409,9 @@ def main():
     slug = None
     if use_custom_slug:
         slug = Prompt.ask("[cyan]Custom slug[/cyan]", default=default_slug)
+        while not is_safe_slug(slug):
+            console.print("[red]Slug must not contain path components.[/red]")
+            slug = Prompt.ask("[cyan]Custom slug[/cyan]", default=default_slug)
 
     # Get content
     console.print("\n[bold]Post Content[/bold]")
